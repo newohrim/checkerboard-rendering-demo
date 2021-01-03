@@ -1,0 +1,16 @@
+﻿main.obj : error LNK2019: ссылка на неразрешенный внешний символ _gladLoadGLLoader в функции _main
+main.obj : error LNK2019: ссылка на неразрешенный внешний символ _glfwInit в функции _main
+main.obj : error LNK2019: ссылка на неразрешенный внешний символ _glfwTerminate в функции _main
+main.obj : error LNK2019: ссылка на неразрешенный внешний символ _glfwWindowHint в функции _main
+main.obj : error LNK2019: ссылка на неразрешенный внешний символ _glfwCreateWindow в функции _main
+main.obj : error LNK2019: ссылка на неразрешенный внешний символ _glfwWindowShouldClose в функции _main
+main.obj : error LNK2019: ссылка на неразрешенный внешний символ _glfwSetWindowShouldClose в функции "void __cdecl processInput(struct GLFWwindow *)" (?processInput@@YAXPAUGLFWwindow@@@Z)
+main.obj : error LNK2019: ссылка на неразрешенный внешний символ _glfwSetFramebufferSizeCallback в функции _main
+main.obj : error LNK2019: ссылка на неразрешенный внешний символ _glfwPollEvents в функции _main
+main.obj : error LNK2019: ссылка на неразрешенный внешний символ _glfwGetKey в функции "void __cdecl processInput(struct GLFWwindow *)" (?processInput@@YAXPAUGLFWwindow@@@Z)
+main.obj : error LNK2019: ссылка на неразрешенный внешний символ _glfwMakeContextCurrent в функции _main
+main.obj : error LNK2019: ссылка на неразрешенный внешний символ _glfwSwapBuffers в функции _main
+main.obj : error LNK2019: ссылка на неразрешенный внешний символ _glfwGetProcAddress в функции _main
+main.obj : error LNK2001: неразрешенный внешний символ "_glad_glViewport"
+C:\Users\ohrim\Desktop\packages\glfw-3.3.2\out\build\x64-Debug\src\glfw3.lib : warning LNK4272: тип компьютера библиотеки "x64" конфликтует с типом целевого компьютера "x86"
+C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\Debug\OpenGL_tesing.exe : fatal error LNK1120: неразрешенных внешних элементов: 14
