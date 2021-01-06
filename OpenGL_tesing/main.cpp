@@ -7,7 +7,9 @@
 #include "shader.cpp"
 
 const int WINDOW_WIDTH = 800;
-const int WINDOW_HEIGHT = 800;
+const int WINDOW_HEIGHT = 600;
+const float NEAR_CLIPPING_PLANE_DIST = 0.1f;
+const float FAR_CLIPPING_PLANE_DIST = 100.0f;
 const bool isCarcasMode = false;
 
 const char* vertexShaderSource = "#version 330 core\n"
@@ -69,6 +71,12 @@ int main()
 	}
 	
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	// Создание матрицы ортографической проекции
+	glm::mat4 ortho = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f, NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);
+	// Создание матрицы перспективной проекции проекции
+	glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT,
+		NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);
+
 
 	// VERTEX SHADER
 	int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -146,25 +154,67 @@ int main()
 		 0.0f,  0.5f, 0.0f  // левая вершина 
 	};
 
-	// VBO, VAO
-	unsigned int VBO[2], VAO[2];
-	glGenBuffers(2, VBO);
-	glGenVertexArrays(2, VAO);
+	float plane[] = {
+		-0.5f, -0.5f, -0.5f,  
+		 0.5f, -0.5f, -0.5f,  
+		 0.5f,  0.5f, -0.5f,  
+		 0.5f,  0.5f, -0.5f,  
+		-0.5f,  0.5f, -0.5f,  
+		-0.5f, -0.5f, -0.5f,  
 
-	glBindVertexArray(VAO[0]);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		-0.5f, -0.5f,  0.5f,  
+		 0.5f, -0.5f,  0.5f,  
+		 0.5f,  0.5f,  0.5f,  
+		 0.5f,  0.5f,  0.5f,  
+		-0.5f,  0.5f,  0.5f,  
+		-0.5f, -0.5f,  0.5f,  
+
+		-0.5f,  0.5f,  0.5f,  
+		-0.5f,  0.5f, -0.5f,  
+		-0.5f, -0.5f, -0.5f,  
+		-0.5f, -0.5f, -0.5f,  
+		-0.5f, -0.5f,  0.5f,  
+		-0.5f,  0.5f,  0.5f,  
+
+		 0.5f,  0.5f,  0.5f,  
+		 0.5f,  0.5f, -0.5f,  
+		 0.5f, -0.5f, -0.5f,  
+		 0.5f, -0.5f, -0.5f,  
+		 0.5f, -0.5f,  0.5f,  
+		 0.5f,  0.5f,  0.5f,  
+
+		-0.5f, -0.5f, -0.5f,  
+		 0.5f, -0.5f, -0.5f,  
+		 0.5f, -0.5f,  0.5f,  
+		 0.5f, -0.5f,  0.5f,  
+		-0.5f, -0.5f,  0.5f,  
+		-0.5f, -0.5f, -0.5f,  
+
+		-0.5f,  0.5f, -0.5f,  
+		 0.5f,  0.5f, -0.5f,  
+		 0.5f,  0.5f,  0.5f,  
+		 0.5f,  0.5f,  0.5f,  
+		-0.5f,  0.5f,  0.5f,  
+		-0.5f,  0.5f, -0.5f,  
+	};
+	unsigned int indices[] = {
+		0, 1, 3, // первый треугольник
+		1, 2, 3  // второй треугольник
+	};
+
+	// VBO, VAO, EBO
+	unsigned int VBO, VAO, EBO;
+	glGenBuffers(1, &VBO);
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &EBO);
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(plane), plane, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-
-	glBindVertexArray(VAO[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	//glBindBuffer(GL_ARRAY_BUFFER, 0);
-	//glBindVertexArray(0);
 
 	// TRANSFORM
 	
@@ -187,22 +237,24 @@ int main()
 
 		// drawing
 		glClear(GL_COLOR_BUFFER_BIT);
-		//glUseProgram(shaderProgram);
-		solidColorOrange.use();
-		glm::mat4 trans = glm::mat4(1.0f);
-		trans = glm::translate(trans, glm::vec3(-0.5f, 0.0f, 0.0f));
-		trans = glm::rotate(trans, (float)glm::tan(glfwGetTime()), glm::vec3(0.0f, 0.0f, 1.0f));
-		unsigned int transformLoc = glGetUniformLocation(solidColorOrange.ID, "transform");
-		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
-		glBindVertexArray(VAO[0]); 
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-		//glUseProgram(shaderProgramYellow);
+		glEnable(GL_DEPTH_TEST);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		solidColorYellow.use();
-		trans = glm::mat4(1.0f);
-		transformLoc = glGetUniformLocation(solidColorYellow.ID, "transform");
-		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
-		glBindVertexArray(VAO[1]);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glm::mat4 model = glm::mat4(1.0f);
+		//model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+		glm::mat4 view = glm::mat4(1.0f);
+		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		int modelLoc = glGetUniformLocation(solidColorYellow.ID, "model");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		int viewLoc = glGetUniformLocation(solidColorYellow.ID, "view");
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		int projLoc = glGetUniformLocation(solidColorYellow.ID, "projection");
+		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
+		glBindVertexArray(VAO);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 			
 		// Проверка и обработка событий, обмен содержимого буферов
 		glfwSwapBuffers(window);
@@ -217,8 +269,9 @@ int main()
 		frameNum = ++frameNum & 1;
 	}
 
-	glDeleteBuffers(2, VBO);
-	glDeleteVertexArrays(2, VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &EBO);
 
 	glfwTerminate();
 	return 0;
