@@ -1,9 +1,13 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include "shader.cpp"
 
 const int WINDOW_WIDTH = 800;
-const int WINDOW_HEIGHT = 600;
+const int WINDOW_HEIGHT = 800;
 const bool isCarcasMode = false;
 
 const char* vertexShaderSource = "#version 330 core\n"
@@ -126,6 +130,9 @@ int main()
 	glDeleteShader(fragmentShader);
 	glDeleteShader(fragmentShaderYellow);
 
+	shader solidColorOrange("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_orange.glsl");
+	shader solidColorYellow("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_yellow.glsl");
+
 	// Вершины
 	float vertices[] = {
 		-0.5f, -0.5f, 0.0f, // левая вершина
@@ -134,9 +141,9 @@ int main()
 	};
 
 	float vertices2[] = {
-		 1.0f,  0.5f, 0.0f, // левая вершина
-		 0.5f, -0.5f, 0.0f, // правая вершина
-		 0.0f,  0.5f, 0.0f  // верхняя вершина 
+		 1.0f,  0.5f, 0.0f, // правая вершина
+		 0.5f, -0.5f, 0.0f, // нижняя вершина
+		 0.0f,  0.5f, 0.0f  // левая вершина 
 	};
 
 	// VBO, VAO
@@ -159,6 +166,9 @@ int main()
 	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 	//glBindVertexArray(0);
 
+	// TRANSFORM
+	
+
 	// BACKGROUND
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
@@ -166,23 +176,45 @@ int main()
 	if (isCarcasMode)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+	float lastFrame = 0.0f;
+	int frameNum = 0;
+
 	// Цикл рендеринга
 	while (!glfwWindowShouldClose(window)) 
 	{
 		// Пользовательский ввод
 		processInput(window);
 
+		// drawing
 		glClear(GL_COLOR_BUFFER_BIT);
-		glUseProgram(shaderProgram);
+		//glUseProgram(shaderProgram);
+		solidColorOrange.use();
+		glm::mat4 trans = glm::mat4(1.0f);
+		trans = glm::translate(trans, glm::vec3(-0.5f, 0.0f, 0.0f));
+		trans = glm::rotate(trans, (float)glm::tan(glfwGetTime()), glm::vec3(0.0f, 0.0f, 1.0f));
+		unsigned int transformLoc = glGetUniformLocation(solidColorOrange.ID, "transform");
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 		glBindVertexArray(VAO[0]); 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
-		glUseProgram(shaderProgramYellow);
+		//glUseProgram(shaderProgramYellow);
+		solidColorYellow.use();
+		trans = glm::mat4(1.0f);
+		transformLoc = glGetUniformLocation(solidColorYellow.ID, "transform");
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 		glBindVertexArray(VAO[1]);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 			
 		// Проверка и обработка событий, обмен содержимого буферов
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
+		// FRAME TIME
+		float currentFrame = glfwGetTime();
+		float deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+		std::cout << "frame time: " << deltaTime << std::endl;
+		//std::cout << "frame num: " << frameNum << std::endl;
+		frameNum = ++frameNum & 1;
 	}
 
 	glDeleteBuffers(2, VBO);

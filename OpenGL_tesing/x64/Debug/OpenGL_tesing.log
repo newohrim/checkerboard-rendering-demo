@@ -1,2 +1,4 @@
 ﻿  main.cpp
+C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\shader.cpp(47,41): warning C4101: e: неиспользованная локальная переменная
+C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(212,22): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
   OpenGL_tesing.vcxproj -> C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\x64\Debug\OpenGL_tesing.exe
