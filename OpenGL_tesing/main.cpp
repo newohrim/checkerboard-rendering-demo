@@ -10,7 +10,11 @@ int WINDOW_WIDTH = 800;
 int WINDOW_HEIGHT = 600;
 const float NEAR_CLIPPING_PLANE_DIST = 0.1f;
 const float FAR_CLIPPING_PLANE_DIST = 100.0f;
-const bool isCarcasMode = false;
+const float FOV = 45.0f;
+const bool isCarcasMode = true;
+
+unsigned int texColorBuffer = 0;
+unsigned int rbo = 0;
 
 const char* vertexShaderSource = "#version 330 core\n"
 	"layout (location = 0) in vec3 aPos;\n"
@@ -41,7 +45,20 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	WINDOW_WIDTH = width;
 	WINDOW_HEIGHT = height;
+	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0,
+		GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	glViewport(0, 0, width, height);
+}
+
+glm::mat4 getPerspective() 
+{
+	return glm::perspective(glm::radians(FOV), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT,
+		NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);
 }
 
 int main() 
@@ -76,8 +93,8 @@ int main()
 	// Создание матрицы ортографической проекции
 	glm::mat4 ortho = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f, NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);
 	// Создание матрицы перспективной проекции проекции
-	glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT,
-		NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);
+	/*glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT,
+		NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);*/
 
 
 	// VERTEX SHADER
@@ -159,7 +176,7 @@ int main()
 		 0.0f,  0.5f, 0.0f  // левая вершина 
 	};
 
-	float plane[] = {
+	float cube[] = {
 		-0.5f, -0.5f, -0.5f,  
 		 0.5f, -0.5f, -0.5f,  
 		 0.5f,  0.5f, -0.5f,  
@@ -225,7 +242,7 @@ int main()
 	glGenBuffers(1, &EBO);
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(plane), plane, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
@@ -250,7 +267,7 @@ int main()
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
 	// Генерируем текстуру
-	unsigned int texColorBuffer;
+	//unsigned int texColorBuffer; // объявляется выше
 	glGenTextures(1, &texColorBuffer);
 	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0,
@@ -263,10 +280,10 @@ int main()
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
 
 	// RBO
-	unsigned int rbo;
+	//unsigned int rbo; // объявляется выше
 	glGenRenderbuffers(1, &rbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_HEIGHT, WINDOW_WIDTH);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
@@ -278,10 +295,6 @@ int main()
 	// BACKGROUND
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-	// CARCAS MODE
-	if (isCarcasMode)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
 	float lastFrame = 0.0f;
 	int frameNum = 0;
 
@@ -290,6 +303,10 @@ int main()
 	{
 		// Пользовательский ввод
 		processInput(window);
+
+		// CARCAS MODE
+		if (isCarcasMode)
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 		// drawing | Первый проход
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -310,7 +327,7 @@ int main()
 		int viewLoc = glGetUniformLocation(solidColorYellow.ID, "view");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		int projLoc = glGetUniformLocation(solidColorYellow.ID, "projection");
-		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
+		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(getPerspective()));
 		glBindVertexArray(VAO);
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
