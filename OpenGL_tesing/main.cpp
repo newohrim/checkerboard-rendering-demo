@@ -5,13 +5,14 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 #include "shader.cpp"
+#include "stb_image.h"
 
 int WINDOW_WIDTH = 800;
 int WINDOW_HEIGHT = 600;
 const float NEAR_CLIPPING_PLANE_DIST = 0.1f;
 const float FAR_CLIPPING_PLANE_DIST = 100.0f;
 const float FOV = 45.0f;
-const bool isCarcasMode = true;
+const bool isCarcasMode = false;
 
 unsigned int texColorBuffer = 0;
 unsigned int rbo = 0;
@@ -163,6 +164,25 @@ int main()
 	screenQuadShader.use();
 	screenQuadShader.setInt("screenTexture", 0);
 
+	// TEXTURES
+	int width, height, nrChannels;
+	unsigned char* data = stbi_load("materials/checkerboard800x600.png", &width, &height, &nrChannels, 0);
+
+	unsigned int checkerboardPattern;
+	glGenTextures(1, &checkerboardPattern);
+	glBindTexture(GL_TEXTURE_2D, checkerboardPattern);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX8, width, height, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, data);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	stbi_image_free(data);
+
+	// STENCIL BUFFER
+	/*unsigned int sb;
+	glGenRenderbuffers(2, &sb);
+	glBindRenderbuffer(GL_RENDERBUFFER, sb);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);*/
+
 	// Вершины
 	float vertices[] = {
 		-0.5f, -0.5f, 0.0f, // левая вершина
@@ -278,6 +298,7 @@ int main()
 
 	// Прикрепляем её к текущему связанному объекту фреймбуфера
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, checkerboardPattern, 0);
 
 	// RBO
 	//unsigned int rbo; // объявляется выше
@@ -286,7 +307,9 @@ int main()
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
@@ -311,6 +334,9 @@ int main()
 		// drawing | Первый проход
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_EQUAL, 0, 1);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 		//glEnable(GL_COLOR_LOGIC_OP);
 		//glLogicOp(GL_NOOP);
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -335,6 +361,7 @@ int main()
 		// drawing | Второй проход (в screen quad)
 		glBindFramebuffer(GL_FRAMEBUFFER, 0); // назад к значениям по умолчанию
 		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_STENCIL_TEST);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
