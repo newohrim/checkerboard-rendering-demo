@@ -12,7 +12,7 @@ int WINDOW_HEIGHT = 600;
 const float NEAR_CLIPPING_PLANE_DIST = 0.1f;
 const float FAR_CLIPPING_PLANE_DIST = 100.0f;
 const float FOV = 45.0f;
-const bool isCarcasMode = false;
+const bool isCarcasMode = true;
 
 unsigned int texColorBuffer = 0;
 unsigned int rbo = 0;
@@ -54,6 +54,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	glViewport(0, 0, width, height);
+	std::cout << "---RESIZED---" << std::endl;
 }
 
 glm::mat4 getPerspective() 
@@ -168,12 +169,29 @@ int main()
 	int width, height, nrChannels;
 	unsigned char* data = stbi_load("materials/checkerboard800x600.png", &width, &height, &nrChannels, 0);
 
-	unsigned int checkerboardPattern;
+	/*unsigned int checkerboardPattern;
 	glGenTextures(1, &checkerboardPattern);
 	glBindTexture(GL_TEXTURE_2D, checkerboardPattern);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX8, width, height, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, data);
+	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, data);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	stbi_image_free(data);*/
+
+	data = stbi_load("materials/checkerboard800x600_alpha.png", &width, &height, &nrChannels, 0);
+
+	unsigned int checkerboardPatternAplha;
+	glGenTextures(1, &checkerboardPatternAplha);
+	glBindTexture(GL_TEXTURE_2D, checkerboardPatternAplha);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, data);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	stbi_image_free(data);
 
@@ -298,18 +316,18 @@ int main()
 
 	// Прикрепляем её к текущему связанному объекту фреймбуфера
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, checkerboardPattern, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, checkerboardPatternAplha, 0);
 
 	// RBO
 	//unsigned int rbo; // объявляется выше
 	glGenRenderbuffers(1, &rbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	//glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
@@ -334,6 +352,8 @@ int main()
 		// drawing | Первый проход
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		glEnable(GL_DEPTH_TEST);
+		//glEnable(GL_ALPHA_TEST);
+		//glAlphaFunc(GL_NOTEQUAL, 0.0f);
 		glEnable(GL_STENCIL_TEST);
 		glStencilFunc(GL_EQUAL, 0, 1);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
