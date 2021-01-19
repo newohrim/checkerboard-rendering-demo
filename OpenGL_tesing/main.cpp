@@ -50,9 +50,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0,
 		GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	/*glBindRenderbuffer(GL_RENDERBUFFER, rbo);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);*/
 	glViewport(0, 0, width, height);
 	std::cout << "---RESIZED---" << std::endl;
 }
@@ -61,6 +61,24 @@ glm::mat4 getPerspective()
 {
 	return glm::perspective(glm::radians(FOV), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT,
 		NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);
+}
+
+unsigned char* getCheckerboardPattern(const int width, const int height) 
+{
+	const int n = height * width;
+	unsigned char* data = new unsigned char[n];
+	const unsigned char fill = 0xFF;
+	unsigned char a = fill;
+	for (unsigned int i = 0; i < height; ++i) 
+	{
+		for (unsigned int j = 0; j < width; ++j) 
+		{
+			data[i * width + j] = a;
+			a ^= fill;
+		}
+		a ^= fill;
+	}
+	return data;
 }
 
 int main() 
@@ -166,8 +184,8 @@ int main()
 	screenQuadShader.setInt("screenTexture", 0);
 
 	// TEXTURES
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load("materials/checkerboard800x600.png", &width, &height, &nrChannels, 0);
+	//int width, height, nrChannels;
+	unsigned char* data = getCheckerboardPattern(WINDOW_WIDTH, WINDOW_HEIGHT);//= stbi_load("materials/ColoredCheckerboard800x600.png", &width, &height, &nrChannels, 0);
 
 	/*unsigned int checkerboardPattern;
 	glGenTextures(1, &checkerboardPattern);
@@ -195,8 +213,9 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX8, width, height, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX8, WINDOW_WIDTH, WINDOW_WIDTH, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, data);
 	glBindTexture(GL_TEXTURE_2D, 0);
+	delete[] data;
 	//stbi_image_free(data);
 
 	// STENCIL BUFFER
