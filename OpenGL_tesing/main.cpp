@@ -12,7 +12,7 @@ int WINDOW_HEIGHT = 600;
 const float NEAR_CLIPPING_PLANE_DIST = 0.1f;
 const float FAR_CLIPPING_PLANE_DIST = 100.0f;
 const float FOV = 45.0f;
-const bool isCarcasMode = true;
+const bool isCarcasMode = false;
 
 unsigned int texColorBuffer = 0;
 unsigned int rbo = 0;
@@ -181,7 +181,11 @@ int main()
 	glBindTexture(GL_TEXTURE_2D, 0);
 	stbi_image_free(data);*/
 
-	data = stbi_load("materials/checkerboard800x600_alpha.png", &width, &height, &nrChannels, 0);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(0xFF);
+
+	//data = stbi_load("materials/checkerboard800x600_alpha.png", &width, &height, &nrChannels, 0);
 
 	unsigned int checkerboardPatternAplha;
 	glGenTextures(1, &checkerboardPatternAplha);
@@ -191,9 +195,9 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX8, width, height, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, data);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	stbi_image_free(data);
+	//stbi_image_free(data);
 
 	// STENCIL BUFFER
 	/*unsigned int sb;
@@ -316,16 +320,16 @@ int main()
 
 	// Прикрепляем её к текущему связанному объекту фреймбуфера
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, checkerboardPatternAplha, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, checkerboardPatternAplha, 0);
 
 	// RBO
 	//unsigned int rbo; // объявляется выше
-	glGenRenderbuffers(1, &rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
+	//glGenRenderbuffers(1, &rbo);
+	//glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, WINDOW_WIDTH, WINDOW_HEIGHT);
 	//glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
 	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
@@ -352,11 +356,11 @@ int main()
 		// drawing | Первый проход
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		glEnable(GL_DEPTH_TEST);
-		//glEnable(GL_ALPHA_TEST);
-		//glAlphaFunc(GL_NOTEQUAL, 0.0f);
 		glEnable(GL_STENCIL_TEST);
-		glStencilFunc(GL_EQUAL, 0, 1);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		if (frameNum == 0)
+			glStencilFunc(GL_EQUAL, 0, 255);
+		else
+			glStencilFunc(GL_EQUAL, 255, 255);
 		//glEnable(GL_COLOR_LOGIC_OP);
 		//glLogicOp(GL_NOOP);
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
