@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include <string>
 #include "shader.cpp"
 #include "stb_image.h"
 
@@ -15,26 +16,8 @@ const float FOV = 45.0f;
 const bool isCarcasMode = false;
 
 unsigned int texColorBuffer = 0;
+unsigned int prevTexColorBuffer = 0;
 unsigned int rbo = 0;
-
-const char* vertexShaderSource = "#version 330 core\n"
-	"layout (location = 0) in vec3 aPos;\n"
-	"void main()\n"
-	"{\n"
-	"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-	"}\0";
-const char* fragmentShaderSource = "#version 330 core\n"
-	"out vec4 FragColor;\n"
-	"void main()\n"
-	"{\n"
-	"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-	"}\n\0";
-const char* fragmentShaderSourceYellow = "#version 330 core\n"
-	"out vec4 FragColor;\n"
-	"void main()\n"
-	"{\n"
-	"   FragColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n"
-	"}\n\0";
 
 void processInput(GLFWwindow* window)
 {
@@ -65,19 +48,26 @@ glm::mat4 getPerspective()
 
 unsigned char* getCheckerboardPattern(const int width, const int height) 
 {
-	const int n = height * width;
-	unsigned char* data = new unsigned char[n];
+	int n = height * width; // 480 000 symbols
+	unsigned char* data = new unsigned char[n + 1];
+	if (data == NULL)
+		std::cout << "WTF??? LOL." << std::endl;
 	const unsigned char fill = 0xFF;
 	unsigned char a = fill;
-	for (unsigned int i = 0; i < height; ++i) 
+	for (int i = 0; i < height; ++i) 
 	{
-		for (unsigned int j = 0; j < width; ++j) 
+		for (int j = 0; j < width; ++j) 
 		{
 			data[i * width + j] = a;
+			//std::cout << "(" << i << "; " << j << ") : " << (int)data[i * width + j] << std::endl;
 			a ^= fill;
 		}
 		a ^= fill;
 	}
+	data[n] = '\0';
+	for (int i = 0; i < n; ++i) 
+		if (data[i] != 0 && data[i] != 255)
+			std::cout << "WTF??? LOL.2" << std::endl;
 	return data;
 }
 
@@ -116,72 +106,13 @@ int main()
 	/*glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT,
 		NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);*/
 
-
-	// VERTEX SHADER
-	int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-
-	int  success;
-	char infoLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	// FRAGMENT SHADER
-	int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-	int fragmentShaderYellow = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShaderYellow, 1, &fragmentShaderSourceYellow, NULL);
-	glCompileShader(fragmentShaderYellow);
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	// SHADER PROGRAM
-	int shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::PROGRAM::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	int shaderProgramYellow = glCreateProgram();
-	glAttachShader(shaderProgramYellow, vertexShader);
-	glAttachShader(shaderProgramYellow, fragmentShaderYellow);
-	glLinkProgram(shaderProgramYellow);
-	glGetProgramiv(shaderProgramYellow, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::PROGRAM::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	//glUseProgram(shaderProgram);
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-	glDeleteShader(fragmentShaderYellow);
-
+	// SHADERS
 	shader solidColorOrange("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_orange.glsl");
 	shader solidColorYellow("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_yellow.glsl");
 	shader screenQuadShader("shaders/fbo_to_screenquad_vertex_shader.glsl", "shaders/fbo_to_screenquad_fragment_shader.glsl");
 	screenQuadShader.use();
 	screenQuadShader.setInt("screenTexture", 0);
+	screenQuadShader.setInt("prevScreenTexture", 1);
 
 	// TEXTURES
 	//int width, height, nrChannels;
@@ -199,9 +130,9 @@ int main()
 	glBindTexture(GL_TEXTURE_2D, 0);
 	stbi_image_free(data);*/
 
-	glEnable(GL_DEPTH_TEST);
+	/*glEnable(GL_DEPTH_TEST);
 	glEnable(GL_STENCIL_TEST);
-	glStencilMask(0xFF);
+	glStencilMask(0xFF);*/
 
 	//data = stbi_load("materials/checkerboard800x600_alpha.png", &width, &height, &nrChannels, 0);
 
@@ -356,6 +287,16 @@ int main()
 		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	// Генерируем текстуру для реконстуркции кадра
+	//unsigned int texColorBuffer; // объявляется выше
+	glGenTextures(1, &prevTexColorBuffer);
+	glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0,
+		GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	// BACKGROUND
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
@@ -409,10 +350,17 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		screenQuadShader.use();
+		glActiveTexture(GL_TEXTURE0 + 0);
+		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+		glActiveTexture(GL_TEXTURE0 + 1);
+		glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
 		glBindVertexArray(quadVAO);
 		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
+		glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 			
 		// Проверка и обработка событий, обмен содержимого буферов
 		glfwSwapBuffers(window);
@@ -425,6 +373,7 @@ int main()
 		std::cout << "frame time: " << deltaTime << std::endl;
 		//std::cout << "frame num: " << frameNum << std::endl;
 		frameNum = ++frameNum & 1;
+		screenQuadShader.setBool("isEvenFrame", frameNum);
 	}
 
 	glDeleteBuffers(1, &VBO);
