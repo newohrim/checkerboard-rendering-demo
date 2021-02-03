@@ -7,13 +7,16 @@
 #include <string>
 #include "shader.cpp"
 #include "stb_image.h"
+#include "configuration.h"
+
+configuration config;
 
 int WINDOW_WIDTH = 800;
 int WINDOW_HEIGHT = 600;
+bool isCarcasMode = false;
 const float NEAR_CLIPPING_PLANE_DIST = 0.1f;
 const float FAR_CLIPPING_PLANE_DIST = 100.0f;
 const float FOV = 45.0f;
-const bool isCarcasMode = false;
 
 unsigned int texColorBuffer = 0;
 unsigned int prevTexColorBuffer = 0;
@@ -65,17 +68,27 @@ unsigned char* getCheckerboardPattern(const int width, const int height)
 		a ^= fill;
 	}
 	data[n] = '\0';
-	for (int i = 0; i < n; ++i) 
+	/*for (int i = 0; i < n; ++i) 
 		if (data[i] != 0 && data[i] != 255)
-			std::cout << "WTF??? LOL.2" << std::endl;
+			std::cout << "WTF??? LOL.2" << std::endl;*/
 	return data;
+}
+
+void config_init() 
+{
+	config.init();
+	WINDOW_WIDTH = config["window_width"];
+	WINDOW_HEIGHT = config["window_height"];
+	isCarcasMode = config["carcas_mode"];
 }
 
 int main() 
 {
+	config_init();
+
 	// Инициализация компонентов
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -355,7 +368,7 @@ int main()
 		glActiveTexture(GL_TEXTURE0 + 1);
 		glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
 		glBindVertexArray(quadVAO);
-		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+		//glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 

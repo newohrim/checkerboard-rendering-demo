@@ -1,8 +1,4 @@
 ﻿  main.cpp
 C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\shader.cpp(47,41): warning C4101: e: неиспользованная локальная переменная
-C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(370,22): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
-  LINK : не найден или не выполнена сборка C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\x64\Debug\OpenGL_tesing.exe при последней инкрементной компоновке; выполняется полная компоновка
-stb_image.obj : warning LNK4099: "vc142.pdb" PDB не найден с "stb_image.obj" или на "C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\x64\Debug\vc142.pdb"; компоновка объекта выполняется как при отсутствии отладочных данных
-shader.obj : warning LNK4099: "vc142.pdb" PDB не найден с "shader.obj" или на "C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\x64\Debug\vc142.pdb"; компоновка объекта выполняется как при отсутствии отладочных данных
-glad.obj : warning LNK4099: "vc142.pdb" PDB не найден с "glad.obj" или на "C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\x64\Debug\vc142.pdb"; компоновка объекта выполняется как при отсутствии отладочных данных
+C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(383,22): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
   OpenGL_tesing.vcxproj -> C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\x64\Debug\OpenGL_tesing.exe
