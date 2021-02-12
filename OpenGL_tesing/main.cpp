@@ -17,6 +17,7 @@ bool isCarcasMode = false;
 const float NEAR_CLIPPING_PLANE_DIST = 0.1f;
 const float FAR_CLIPPING_PLANE_DIST = 100.0f;
 const float FOV = 45.0f;
+const glm::vec3 lightInitPos(2.0f, 1.0f, 5.0f);
 
 unsigned int texColorBuffer = 0;
 unsigned int prevTexColorBuffer = 0;
@@ -120,8 +121,11 @@ int main()
 		NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);*/
 
 	// SHADERS
+	glm::vec3 yellow(1.0f, 1.0f, 0.0f);
+	glm::vec3 lightPos(lightInitPos);
 	shader solidColorOrange("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_orange.glsl");
 	shader solidColorYellow("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_yellow.glsl");
+	shader lightingShader("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader.glsl");
 	shader screenQuadShader("shaders/fbo_to_screenquad_vertex_shader.glsl", "shaders/fbo_to_screenquad_fragment_shader.glsl");
 	screenQuadShader.use();
 	screenQuadShader.setInt("screenTexture", 0);
@@ -162,6 +166,18 @@ int main()
 	delete[] data;
 	//stbi_image_free(data);
 
+	unsigned int depthAttachmentTexture;
+	glGenTextures(1, &depthAttachmentTexture);
+	glBindTexture(GL_TEXTURE_2D, depthAttachmentTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+	//glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	// STENCIL BUFFER
 	/*unsigned int sb;
 	glGenRenderbuffers(2, &sb);
@@ -182,47 +198,47 @@ int main()
 	};
 
 	float cube[] = {
-		-0.5f, -0.5f, -0.5f,  
-		 0.5f, -0.5f, -0.5f,  
-		 0.5f,  0.5f, -0.5f,  
-		 0.5f,  0.5f, -0.5f,  
-		-0.5f,  0.5f, -0.5f,  
-		-0.5f, -0.5f, -0.5f,  
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-		-0.5f, -0.5f,  0.5f,  
-		 0.5f, -0.5f,  0.5f,  
-		 0.5f,  0.5f,  0.5f,  
-		 0.5f,  0.5f,  0.5f,  
-		-0.5f,  0.5f,  0.5f,  
-		-0.5f, -0.5f,  0.5f,  
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-		-0.5f,  0.5f,  0.5f,  
-		-0.5f,  0.5f, -0.5f,  
-		-0.5f, -0.5f, -0.5f,  
-		-0.5f, -0.5f, -0.5f,  
-		-0.5f, -0.5f,  0.5f,  
-		-0.5f,  0.5f,  0.5f,  
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-		 0.5f,  0.5f,  0.5f,  
-		 0.5f,  0.5f, -0.5f,  
-		 0.5f, -0.5f, -0.5f,  
-		 0.5f, -0.5f, -0.5f,  
-		 0.5f, -0.5f,  0.5f,  
-		 0.5f,  0.5f,  0.5f,  
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-		-0.5f, -0.5f, -0.5f,  
-		 0.5f, -0.5f, -0.5f,  
-		 0.5f, -0.5f,  0.5f,  
-		 0.5f, -0.5f,  0.5f,  
-		-0.5f, -0.5f,  0.5f,  
-		-0.5f, -0.5f, -0.5f,  
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-		-0.5f,  0.5f, -0.5f,  
-		 0.5f,  0.5f, -0.5f,  
-		 0.5f,  0.5f,  0.5f,  
-		 0.5f,  0.5f,  0.5f,  
-		-0.5f,  0.5f,  0.5f,  
-		-0.5f,  0.5f, -0.5f,  
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
 	unsigned int indices[] = {
 		0, 1, 3, // первый треугольник
@@ -251,8 +267,12 @@ int main()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	// Координатные атрибуты
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+	// Атрибуты нормалей
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	// VAO прямоугольника
 	unsigned int quadVAO, quadVBO;
@@ -284,16 +304,17 @@ int main()
 	// Прикрепляем её к текущему связанному объекту фреймбуфера
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, checkerboardPatternAplha, 0);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthAttachmentTexture, 0);
 
 	// RBO
 	//unsigned int rbo; // объявляется выше
-	//glGenRenderbuffers(1, &rbo);
-	//glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, WINDOW_WIDTH, WINDOW_HEIGHT);
-	//glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, WINDOW_WIDTH, WINDOW_HEIGHT);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
 	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -301,7 +322,6 @@ int main()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	// Генерируем текстуру для реконстуркции кадра
-	//unsigned int texColorBuffer; // объявляется выше
 	glGenTextures(1, &prevTexColorBuffer);
 	glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0,
@@ -339,17 +359,21 @@ int main()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		solidColorYellow.use();
+		//solidColorYellow.use();
+		lightingShader.use();
+		lightingShader.setVec3("objectColor", yellow.x, yellow.y, yellow.z);
+		lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+		lightingShader.setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
 		glm::mat4 model = glm::mat4(1.0f);
 		//model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 		glm::mat4 view = glm::mat4(1.0f);
 		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-		int modelLoc = glGetUniformLocation(solidColorYellow.ID, "model");
+		int modelLoc = glGetUniformLocation(lightingShader.ID, "model");
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		int viewLoc = glGetUniformLocation(solidColorYellow.ID, "view");
+		int viewLoc = glGetUniformLocation(lightingShader.ID, "view");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		int projLoc = glGetUniformLocation(solidColorYellow.ID, "projection");
+		int projLoc = glGetUniformLocation(lightingShader.ID, "projection");
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(getPerspective()));
 		glBindVertexArray(VAO);
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
