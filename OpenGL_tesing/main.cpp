@@ -8,20 +8,28 @@
 #include "shader.cpp"
 #include "stb_image.h"
 #include "configuration.h"
+#include "ui_module.h"
+#include "frames_counter.h"
 
 configuration config;
+ui_module ui("fonts/arial.ttf");
+frames_counter fps;
 
 int WINDOW_WIDTH = 800;
 int WINDOW_HEIGHT = 600;
 bool isCarcasMode = false;
+bool isFpsCounter = false;
+bool isCheckerboardRendering = true;
 const float NEAR_CLIPPING_PLANE_DIST = 0.1f;
 const float FAR_CLIPPING_PLANE_DIST = 100.0f;
 const float FOV = 45.0f;
 const glm::vec3 lightInitPos(2.0f, 1.0f, 5.0f);
+const glm::vec3 globalLightColor(1.0f, 1.0f, 1.0f);
 
 unsigned int texColorBuffer = 0;
 unsigned int prevTexColorBuffer = 0;
 unsigned int rbo = 0;
+float deltaTime = 0.0f;
 
 void processInput(GLFWwindow* window)
 {
@@ -50,28 +58,22 @@ glm::mat4 getPerspective()
 		NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);
 }
 
-unsigned char* getCheckerboardPattern(const int width, const int height) 
+int* getCheckerboardPattern(const int width, const int height) 
 {
-	int n = height * width; // 480 000 symbols
-	unsigned char* data = new unsigned char[n + 1];
-	if (data == NULL)
-		std::cout << "WTF??? LOL." << std::endl;
-	const unsigned char fill = 0xFF;
-	unsigned char a = fill;
+	int n = height * width; // 480 000 words (each 4 bytes)
+	int* data = new int[n];
+	const int fill = 0xFF;
+	int a = fill;
 	for (int i = 0; i < height; ++i) 
 	{
 		for (int j = 0; j < width; ++j) 
 		{
 			data[i * width + j] = a;
-			//std::cout << "(" << i << "; " << j << ") : " << (int)data[i * width + j] << std::endl;
 			a ^= fill;
 		}
 		a ^= fill;
 	}
-	data[n] = '\0';
-	/*for (int i = 0; i < n; ++i) 
-		if (data[i] != 0 && data[i] != 255)
-			std::cout << "WTF??? LOL.2" << std::endl;*/
+	//data[n] = '\0';
 	return data;
 }
 
@@ -81,6 +83,15 @@ void config_init()
 	WINDOW_WIDTH = config["window_width"];
 	WINDOW_HEIGHT = config["window_height"];
 	isCarcasMode = config["carcas_mode"];
+	isFpsCounter = config["fps_counter"];
+	isCheckerboardRendering = config["checkerboard_r"];
+}
+
+void getError() 
+{
+	auto glstatus = glGetError();
+	if (glstatus != GL_NO_ERROR)
+		std::cout << "Error in GL call:" << glstatus << std::endl;
 }
 
 int main() 
@@ -112,10 +123,13 @@ int main()
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
+
+	ui.set_font_size(48);
+	ui.load_characters();
 	
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 	// Создание матрицы ортографической проекции
-	glm::mat4 ortho = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f, NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);
+	glm::mat4 ortho = glm::ortho(0.0f, static_cast<float>(WINDOW_WIDTH), 0.0f, static_cast<float>(WINDOW_HEIGHT));
 	// Создание матрицы перспективной проекции проекции
 	/*glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT,
 		NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);*/
@@ -123,9 +137,13 @@ int main()
 	// SHADERS
 	glm::vec3 yellow(1.0f, 1.0f, 0.0f);
 	glm::vec3 lightPos(lightInitPos);
+	shader textShader("shaders/text_vertex_shader.glsl", "shaders/text_fragment_shader.glsl");
+	textShader.use();
+	glUniformMatrix4fv(glGetUniformLocation(textShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(ortho));
 	shader solidColorOrange("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_orange.glsl");
 	shader solidColorYellow("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_yellow.glsl");
 	shader lightingShader("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader.glsl");
+	shader screenQuadSimpleShader("shaders/fbo_to_screenquad_vertex_shader.glsl", "shaders/fbo_to_screenquad_simple_shader.glsl");
 	shader screenQuadShader("shaders/fbo_to_screenquad_vertex_shader.glsl", "shaders/fbo_to_screenquad_fragment_shader.glsl");
 	screenQuadShader.use();
 	screenQuadShader.setInt("screenTexture", 0);
@@ -133,7 +151,7 @@ int main()
 
 	// TEXTURES
 	//int width, height, nrChannels;
-	unsigned char* data = getCheckerboardPattern(WINDOW_WIDTH, WINDOW_HEIGHT);//= stbi_load("materials/ColoredCheckerboard800x600.png", &width, &height, &nrChannels, 0);
+	int* data = getCheckerboardPattern(WINDOW_WIDTH, WINDOW_HEIGHT);//= stbi_load("materials/ColoredCheckerboard800x600.png", &width, &height, &nrChannels, 0);
 
 	/*unsigned int checkerboardPattern;
 	glGenTextures(1, &checkerboardPattern);
@@ -161,22 +179,23 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX8, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, data);
+	getError();
 	glBindTexture(GL_TEXTURE_2D, 0);
 	delete[] data;
 	//stbi_image_free(data);
 
-	unsigned int depthAttachmentTexture;
+	/*unsigned int depthAttachmentTexture;
 	glGenTextures(1, &depthAttachmentTexture);
 	glBindTexture(GL_TEXTURE_2D, depthAttachmentTexture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-	//glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);*/
+	/*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);*/
+	/*glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);*/
 
 	// STENCIL BUFFER
 	/*unsigned int sb;
@@ -303,22 +322,23 @@ int main()
 
 	// Прикрепляем её к текущему связанному объекту фреймбуфера
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, checkerboardPatternAplha, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, checkerboardPatternAplha, 0);
 	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthAttachmentTexture, 0);
 
 	// RBO
 	//unsigned int rbo; // объявляется выше
-	glGenRenderbuffers(1, &rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, WINDOW_WIDTH, WINDOW_HEIGHT);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	//glGenRenderbuffers(1, &rbo);
+	//glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, WINDOW_WIDTH, WINDOW_HEIGHT);
+	//glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
 	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+	auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (fboStatus == GL_FRAMEBUFFER_UNSUPPORTED)
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete! :: " << fboStatus << std::endl;
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	// Генерируем текстуру для реконстуркции кадра
@@ -349,11 +369,14 @@ int main()
 		// drawing | Первый проход
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_STENCIL_TEST);
-		if (frameNum == 0)
-			glStencilFunc(GL_EQUAL, 0, 255);
-		else
-			glStencilFunc(GL_EQUAL, 255, 255);
+		if (isCheckerboardRendering) 
+		{
+			glEnable(GL_STENCIL_TEST);
+			if (frameNum == 0)
+				glStencilFunc(GL_EQUAL, 0, 255);
+			else
+				glStencilFunc(GL_EQUAL, 255, 255);
+		}
 		//glEnable(GL_COLOR_LOGIC_OP);
 		//glLogicOp(GL_NOOP);
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -362,7 +385,7 @@ int main()
 		//solidColorYellow.use();
 		lightingShader.use();
 		lightingShader.setVec3("objectColor", yellow.x, yellow.y, yellow.z);
-		lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+		lightingShader.setVec3("lightColor", globalLightColor.x, globalLightColor.y, globalLightColor.z);
 		lightingShader.setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
 		glm::mat4 model = glm::mat4(1.0f);
 		//model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -379,6 +402,10 @@ int main()
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
+		// UI SECTION
+		if (isFpsCounter)
+			ui.render_text(textShader, std::to_string(fps.get_fps()), 25.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+
 		// drawing | Второй проход (в screen quad)
 		glBindFramebuffer(GL_FRAMEBUFFER, 0); // назад к значениям по умолчанию
 		glDisable(GL_DEPTH_TEST);
@@ -386,7 +413,10 @@ int main()
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		screenQuadShader.use();
+		if (isCheckerboardRendering)
+			screenQuadShader.use();
+		else
+			screenQuadSimpleShader.use();
 		glActiveTexture(GL_TEXTURE0 + 0);
 		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 		glActiveTexture(GL_TEXTURE0 + 1);
@@ -396,21 +426,28 @@ int main()
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
-		glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+		if (isCheckerboardRendering) 
+		{
+			glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
+			glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+			frameNum = ++frameNum & 1;
+			screenQuadShader.setBool("isEvenFrame", frameNum);
+		}
 			
 		// Проверка и обработка событий, обмен содержимого буферов
+		glfwSwapInterval(0);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
 		// FRAME TIME
 		float currentFrame = glfwGetTime();
-		float deltaTime = currentFrame - lastFrame;
+		deltaTime = currentFrame - lastFrame;
+		fps.add_frame(deltaTime);
 		lastFrame = currentFrame;
 		std::cout << "frame time: " << deltaTime << std::endl;
 		//std::cout << "frame num: " << frameNum << std::endl;
-		frameNum = ++frameNum & 1;
-		screenQuadShader.setBool("isEvenFrame", frameNum);
+		//frameNum = ++frameNum & 1;
+		//screenQuadShader.setBool("isEvenFrame", frameNum);
 	}
 
 	glDeleteBuffers(1, &VBO);
