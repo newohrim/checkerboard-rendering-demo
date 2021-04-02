@@ -19,6 +19,7 @@ vec4 averageVector(in vec4[9] vectors)
  
 void main()
 { 
+	/*
 	vec4 reconstructedPixel = averageVector(vec4[9]
 	(
 		texelFetch(prevScreenTexture, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0),
@@ -30,7 +31,8 @@ void main()
 		texelFetch(prevScreenTexture, ivec2(gl_FragCoord.x - 1, gl_FragCoord.y + 1), 0),
 		texelFetch(prevScreenTexture, ivec2(gl_FragCoord.x - 1, gl_FragCoord.y - 1), 0),
 		texelFetch(prevScreenTexture, ivec2(gl_FragCoord.x + 1, gl_FragCoord.y - 1), 0)
-	));
+	));*/
+	
 	if (isEvenFrame) {
 		if (mod(floor(gl_FragCoord.y), 2) == 1)
 		{
@@ -38,7 +40,7 @@ void main()
 			{
 				//FragColor = vec4(255, 0, 0, 0);
 				//FragColor = texture(prevScreenTexture, TexCoords);
-				FragColor = reconstructedPixel;
+				FragColor = texelFetch(prevScreenTexture, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
 			}
 			else 
 			{
@@ -51,7 +53,7 @@ void main()
 			{
 				//FragColor = vec4(255, 0, 0, 0);
 				//FragColor = texture(prevScreenTexture, TexCoords);
-				FragColor = reconstructedPixel;
+				FragColor = texelFetch(prevScreenTexture, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
 			}
 			else 
 			{
@@ -66,7 +68,7 @@ void main()
 			{
 				//FragColor = vec4(255, 0, 0, 0);
 				//FragColor = texture(prevScreenTexture, TexCoords);
-				FragColor = reconstructedPixel;
+				FragColor = texelFetch(prevScreenTexture, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
 			}
 			else 
 			{
@@ -79,7 +81,7 @@ void main()
 			{
 				//FragColor = vec4(255, 0, 0, 0);
 				//FragColor = texture(prevScreenTexture, TexCoords);
-				FragColor = reconstructedPixel;
+				FragColor = texelFetch(prevScreenTexture, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
 			}
 			else 
 			{
@@ -88,4 +90,5 @@ void main()
 		}
 	}
 	//FragColor = vec4(abs(gl_FragCoord.x)/1000, abs(gl_FragCoord.y)/1000, 0, 0);
+	//FragColor = texture(screenTexture, TexCoords);
 }

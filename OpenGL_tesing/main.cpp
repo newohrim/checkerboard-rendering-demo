@@ -376,6 +376,15 @@ int main()
 				glStencilFunc(GL_EQUAL, 0, 255);
 			else
 				glStencilFunc(GL_EQUAL, 255, 255);
+
+			if (!frameNum) 
+			{
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+			}
+			else
+			{
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, prevTexColorBuffer, 0);
+			}
 		}
 		//glEnable(GL_COLOR_LOGIC_OP);
 		//glLogicOp(GL_NOOP);
@@ -413,26 +422,46 @@ int main()
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		if (isCheckerboardRendering)
+		if (isCheckerboardRendering) 
+		{
 			screenQuadShader.use();
+
+			if (!frameNum) 
+			{
+				glActiveTexture(GL_TEXTURE0 + 0);
+				glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+				glActiveTexture(GL_TEXTURE0 + 1);
+				glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
+			}
+			else 
+			{
+				glActiveTexture(GL_TEXTURE0 + 0);
+				glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
+				glActiveTexture(GL_TEXTURE0 + 1);
+				glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+			}
+
+			//frameNum = ++frameNum & 1;
+			screenQuadShader.setBool("isEvenFrame", frameNum);
+		}
 		else
 			screenQuadSimpleShader.use();
-		glActiveTexture(GL_TEXTURE0 + 0);
+		/*glActiveTexture(GL_TEXTURE0 + 0);
 		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 		glActiveTexture(GL_TEXTURE0 + 1);
-		glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
+		glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);*/
 		glBindVertexArray(quadVAO);
 		//glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		if (isCheckerboardRendering) 
+		/*if (isCheckerboardRendering) 
 		{
 			glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
 			glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 			frameNum = ++frameNum & 1;
 			screenQuadShader.setBool("isEvenFrame", frameNum);
-		}
+		}*/
 			
 		// Проверка и обработка событий, обмен содержимого буферов
 		glfwSwapInterval(0);
@@ -444,10 +473,11 @@ int main()
 		deltaTime = currentFrame - lastFrame;
 		fps.add_frame(deltaTime);
 		lastFrame = currentFrame;
-		std::cout << "frame time: " << deltaTime << std::endl;
+		//std::cout << "frame time: " << deltaTime << std::endl;
 		//std::cout << "frame num: " << frameNum << std::endl;
 		//frameNum = ++frameNum & 1;
 		//screenQuadShader.setBool("isEvenFrame", frameNum);
+		frameNum = ++frameNum & 1;
 	}
 
 	glDeleteBuffers(1, &VBO);
