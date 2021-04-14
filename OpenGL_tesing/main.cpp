@@ -145,6 +145,8 @@ int main()
 	shader solidColorYellow("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_yellow.glsl");
 	shader lightingShader("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader.glsl");
 	shader texturedShader("shaders/simple_vertex_shader.glsl", "shaders/textured_fragment_shader.glsl");
+	texturedShader.use();
+	texturedShader.setInt("material.diffuse", 0);
 	shader screenQuadSimpleShader("shaders/fbo_to_screenquad_vertex_shader.glsl", "shaders/fbo_to_screenquad_simple_shader.glsl");
 	shader screenQuadShader("shaders/fbo_to_screenquad_vertex_shader.glsl", "shaders/fbo_to_screenquad_fragment_shader.glsl");
 	screenQuadShader.use();
@@ -152,6 +154,28 @@ int main()
 	screenQuadShader.setInt("prevScreenTexture", 1);
 
 	// TEXTURES
+
+	int cubeTextureWidth, cubeTextureHeight, nrChannels;
+	unsigned char* textureData = stbi_load("materials/cubeTexture.jpg", &cubeTextureWidth, &cubeTextureHeight, &nrChannels, 0);
+
+	unsigned int cubeTexture;
+	glGenTextures(1, &cubeTexture);
+	glBindTexture(GL_TEXTURE_2D, cubeTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	if (textureData) 
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cubeTextureWidth, cubeTextureHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(textureData);
+
 	//int width, height, nrChannels;
 	int* data = getCheckerboardPattern(WINDOW_WIDTH, WINDOW_HEIGHT);//= stbi_load("materials/ColoredCheckerboard800x600.png", &width, &height, &nrChannels, 0);
 
@@ -403,8 +427,8 @@ int main()
 		//lightingShader.setVec3("objectColor", yellow.x, yellow.y, yellow.z);
 		//texturedShader.setVec3("lightColor", globalLightColor.x, globalLightColor.y, globalLightColor.z);
 		texturedShader.setVec3("viewPos", cameraPos.x, cameraPos.y, cameraPos.z);
-		texturedShader.setVec3("material.ambient", yellow.x, yellow.y, yellow.z);
-		texturedShader.setVec3("material.diffuse", yellow.x, yellow.y, yellow.z);
+		//texturedShader.setVec3("material.ambient", yellow.x, yellow.y, yellow.z);
+		//texturedShader.setVec3("material.diffuse", yellow.x, yellow.y, yellow.z);
 		texturedShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 		texturedShader.setFloat("material.shininess", 32.0f);
 		texturedShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
@@ -425,6 +449,8 @@ int main()
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(getPerspective()));
 		glBindVertexArray(VAO);
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, cubeTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// UI SECTION
