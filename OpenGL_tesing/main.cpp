@@ -23,6 +23,7 @@ bool isCheckerboardRendering = true;
 const float NEAR_CLIPPING_PLANE_DIST = 0.1f;
 const float FAR_CLIPPING_PLANE_DIST = 100.0f;
 const float FOV = 45.0f;
+const glm::vec3 cameraPos(0.0f, 0.0f, 3.0f);
 const glm::vec3 lightInitPos(2.0f, 1.0f, 5.0f);
 const glm::vec3 globalLightColor(1.0f, 1.0f, 1.0f);
 
@@ -143,6 +144,7 @@ int main()
 	shader solidColorOrange("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_orange.glsl");
 	shader solidColorYellow("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_yellow.glsl");
 	shader lightingShader("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader.glsl");
+	shader texturedShader("shaders/simple_vertex_shader.glsl", "shaders/textured_fragment_shader.glsl");
 	shader screenQuadSimpleShader("shaders/fbo_to_screenquad_vertex_shader.glsl", "shaders/fbo_to_screenquad_simple_shader.glsl");
 	shader screenQuadShader("shaders/fbo_to_screenquad_vertex_shader.glsl", "shaders/fbo_to_screenquad_fragment_shader.glsl");
 	screenQuadShader.use();
@@ -217,47 +219,48 @@ int main()
 	};
 
 	float cube[] = {
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		// координаты        // нормали           // текстурные координаты
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
 
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 	};
 	unsigned int indices[] = {
 		0, 1, 3, // первый треугольник
@@ -287,11 +290,14 @@ int main()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// Координатные атрибуты
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	// Атрибуты нормалей
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+	// Атрибуты текстуры
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	// VAO прямоугольника
 	unsigned int quadVAO, quadVBO;
@@ -354,7 +360,7 @@ int main()
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
 	float lastFrame = 0.0f;
-	int frameNum = 0;
+	bool isEvenFrame = false;
 
 	// Цикл рендеринга
 	while (!glfwWindowShouldClose(window)) 
@@ -372,12 +378,13 @@ int main()
 		if (isCheckerboardRendering) 
 		{
 			glEnable(GL_STENCIL_TEST);
-			if (frameNum == 0)
+			glStencilFunc(GL_EQUAL, 255 * isEvenFrame, 255);
+			/*if (isEvenFrame == 0)
 				glStencilFunc(GL_EQUAL, 0, 255);
 			else
-				glStencilFunc(GL_EQUAL, 255, 255);
+				glStencilFunc(GL_EQUAL, 255, 255);*/
 
-			if (!frameNum) 
+			if (!isEvenFrame) 
 			{
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
 			}
@@ -392,10 +399,19 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//solidColorYellow.use();
-		lightingShader.use();
-		lightingShader.setVec3("objectColor", yellow.x, yellow.y, yellow.z);
-		lightingShader.setVec3("lightColor", globalLightColor.x, globalLightColor.y, globalLightColor.z);
-		lightingShader.setVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
+		texturedShader.use();
+		//lightingShader.setVec3("objectColor", yellow.x, yellow.y, yellow.z);
+		//texturedShader.setVec3("lightColor", globalLightColor.x, globalLightColor.y, globalLightColor.z);
+		texturedShader.setVec3("viewPos", cameraPos.x, cameraPos.y, cameraPos.z);
+		texturedShader.setVec3("material.ambient", yellow.x, yellow.y, yellow.z);
+		texturedShader.setVec3("material.diffuse", yellow.x, yellow.y, yellow.z);
+		texturedShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+		texturedShader.setFloat("material.shininess", 32.0f);
+		texturedShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+		texturedShader.setVec3("light.diffuse", 0.9f, 0.9f, 0.9f); 
+		texturedShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+		texturedShader.setVec3("light.position", lightPos.x, lightPos.y, lightPos.z);
+
 		glm::mat4 model = glm::mat4(1.0f);
 		//model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
@@ -413,7 +429,7 @@ int main()
 
 		// UI SECTION
 		if (isFpsCounter)
-			ui.render_text(textShader, std::to_string(fps.get_fps()), 25.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+			ui.render_text(textShader, std::to_string(fps.get_fps()), 25.0f, /*25.0f*/ WINDOW_HEIGHT - 100.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 
 		// drawing | Второй проход (в screen quad)
 		glBindFramebuffer(GL_FRAMEBUFFER, 0); // назад к значениям по умолчанию
@@ -426,28 +442,31 @@ int main()
 		{
 			screenQuadShader.use();
 
-			if (!frameNum) 
+			//if (!isEvenFrame) 
+			//{
+				glActiveTexture(GL_TEXTURE0 + isEvenFrame);
+				glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+				glActiveTexture(GL_TEXTURE0 + !isEvenFrame);
+				glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
+			//}
+			/*else 
 			{
 				glActiveTexture(GL_TEXTURE0 + 0);
-				glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-				glActiveTexture(GL_TEXTURE0 + 1);
-				glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
-			}
-			else 
-			{
-				glActiveTexture(GL_TEXTURE0 + 0);
 				glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
 				glActiveTexture(GL_TEXTURE0 + 1);
 				glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-			}
+			}*/
 
 			//frameNum = ++frameNum & 1;
-			screenQuadShader.setBool("isEvenFrame", frameNum);
+			screenQuadShader.setBool("isEvenFrame", isEvenFrame);
 		}
-		else
+		else 
+		{
 			screenQuadSimpleShader.use();
-		/*glActiveTexture(GL_TEXTURE0 + 0);
-		glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+			glActiveTexture(GL_TEXTURE0 + 0);
+			glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+		}
+		/*
 		glActiveTexture(GL_TEXTURE0 + 1);
 		glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);*/
 		glBindVertexArray(quadVAO);
@@ -477,7 +496,7 @@ int main()
 		//std::cout << "frame num: " << frameNum << std::endl;
 		//frameNum = ++frameNum & 1;
 		//screenQuadShader.setBool("isEvenFrame", frameNum);
-		frameNum = ++frameNum & 1;
+		isEvenFrame = !isEvenFrame;
 	}
 
 	glDeleteBuffers(1, &VBO);

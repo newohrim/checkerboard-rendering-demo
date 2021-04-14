@@ -33,10 +33,42 @@ void main()
 		texelFetch(prevScreenTexture, ivec2(gl_FragCoord.x + 1, gl_FragCoord.y - 1), 0)
 	));*/
 	
-	if (isEvenFrame) {
-		if (mod(floor(gl_FragCoord.y), 2) == 1)
+	//bool x_even = bool(int(gl_FragCoord.x) & 1);
+	//bool y_even = bool(int(gl_FragCoord.y) & 1);
+	
+	int x_even = int(gl_FragCoord.x) & 1;
+	int y_even = int(gl_FragCoord.y) & 1;
+	
+	/*
+	if (y_even == !isEvenFrame) 
+	{
+		if (x_even == isEvenFrame) 
 		{
-			if (mod(floor(gl_FragCoord.x), 2) == 0) 
+			FragColor = texelFetch(prevScreenTexture, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
+		}
+		else 
+		{
+			FragColor = texture(screenTexture, TexCoords);
+		}
+		//FragColor = vec4(255, 0, 0, 0);
+	}
+	else 
+	{
+		if (x_even == !isEvenFrame)
+		{
+			FragColor = texelFetch(prevScreenTexture, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
+		}
+		else 
+		{
+			FragColor = texture(screenTexture, TexCoords);
+		}
+		//FragColor = vec4(255, 0, 0, 0);
+	}*/
+	
+	if (isEvenFrame) {
+		if (y_even == 1) // !isEvenFrame
+		{
+			if (x_even == 0) // isEvenFrame
 			{
 				//FragColor = vec4(255, 0, 0, 0);
 				//FragColor = texture(prevScreenTexture, TexCoords);
@@ -49,7 +81,7 @@ void main()
 		}
 		else 
 		{
-			if (mod(floor(gl_FragCoord.x), 2) == 1) 
+			if (x_even == 1) // isEvenFrame
 			{
 				//FragColor = vec4(255, 0, 0, 0);
 				//FragColor = texture(prevScreenTexture, TexCoords);
@@ -62,9 +94,9 @@ void main()
 		}
 	}
 	else {
-		if (mod(floor(gl_FragCoord.y), 2) == 0)
+		if (y_even == 0)
 		{
-			if (mod(floor(gl_FragCoord.x), 2) == 0) 
+			if (x_even == 0) 
 			{
 				//FragColor = vec4(255, 0, 0, 0);
 				//FragColor = texture(prevScreenTexture, TexCoords);
@@ -77,7 +109,7 @@ void main()
 		}
 		else 
 		{
-			if (mod(floor(gl_FragCoord.x), 2) == 1) 
+			if (x_even == 1) 
 			{
 				//FragColor = vec4(255, 0, 0, 0);
 				//FragColor = texture(prevScreenTexture, TexCoords);
