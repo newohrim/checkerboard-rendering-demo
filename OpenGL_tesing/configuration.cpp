@@ -14,6 +14,13 @@ void configuration::init()
         config_data[parts[0]] = stoi(parts[1]);
     }
     in.close();
+
+    WINDOW_WIDTH = config_data["window_width"];
+    WINDOW_HEIGHT = config_data["window_height"];
+    NEAR_CLIPPING_PLANE_DIST = 0.1f;
+    FAR_CLIPPING_PLANE_DIST = 100.0f;
+    FOV = 45.0f;
+    CAMERA_OFFSET = 3.0f;
 }
 
 vector<string> configuration::split(const string& sequence)

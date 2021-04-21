@@ -156,6 +156,7 @@
   <ItemGroup>
     <ClCompile Include="configuration.cpp" />
     <ClCompile Include="frames_counter.cpp" />
+    <ClCompile Include="game_object.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="shader.cpp" />
@@ -165,6 +166,7 @@
   <ItemGroup>
     <ClInclude Include="configuration.h" />
     <ClInclude Include="frames_counter.h" />
+    <ClInclude Include="game_object.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="ui_module.h" />
   </ItemGroup>
