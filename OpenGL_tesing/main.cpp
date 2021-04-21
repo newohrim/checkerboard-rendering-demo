@@ -38,7 +38,7 @@ int configuration::WINDOW_HEIGHT = 600;
 float configuration::NEAR_CLIPPING_PLANE_DIST = 0.1f;
 float configuration::FAR_CLIPPING_PLANE_DIST = 100.0f;
 float configuration::FOV = 45.0f;
-float configuration::CAMERA_OFFSET = 3.0f;
+float configuration::CAMERA_OFFSET = 7.5f;
 
 void processInput(GLFWwindow* window)
 {
@@ -455,6 +455,22 @@ int main()
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 		cube_object.set_position(glm::vec3(0.0f, 0.0f, 0.0f), model);
+		cube_object.render();
+		cube_object.set_position(glm::vec3(-2.0f, 0.0f, 0.0f), model);
+		cube_object.render();
+		cube_object.set_position(glm::vec3(-2.0f, 2.0f, 0.0f), model);
+		cube_object.render();
+		cube_object.set_position(glm::vec3(0.0f, 2.0f, 0.0f), model);
+		cube_object.render();
+		cube_object.set_position(glm::vec3(2.0f, 2.0f, 0.0f), model);
+		cube_object.render();
+		cube_object.set_position(glm::vec3(2.0f, 0.0f, 0.0f), model);
+		cube_object.render();
+		cube_object.set_position(glm::vec3(2.0f, -2.0f, 0.0f), model);
+		cube_object.render();
+		cube_object.set_position(glm::vec3(0.0f, -2.0f, 0.0f), model);
+		cube_object.render();
+		cube_object.set_position(glm::vec3(-2.0f, -2.0f, 0.0f), model);
 		cube_object.render();
 
 		//solidColorYellow.use();
