@@ -1,1 +1,1 @@
-average fps = 274
+average fps = 173

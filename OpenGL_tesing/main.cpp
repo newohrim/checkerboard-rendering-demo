@@ -11,6 +11,7 @@
 #include "ui_module.h"
 #include "frames_counter.h"
 #include "game_object.h";
+#include "chb_fbo.h";
 
 configuration config;
 ui_module ui("fonts/arial.ttf");
@@ -28,9 +29,6 @@ const glm::vec3 cameraPos(0.0f, 0.0f, 3.0f);
 const glm::vec3 lightInitPos(2.0f, 1.0f, 5.0f);
 const glm::vec3 globalLightColor(1.0f, 1.0f, 1.0f);
 
-unsigned int texColorBuffer = 0;
-unsigned int prevTexColorBuffer = 0;
-unsigned int rbo = 0;
 float deltaTime = 0.0f;
 
 int configuration::WINDOW_WIDTH = 800;
@@ -39,6 +37,26 @@ float configuration::NEAR_CLIPPING_PLANE_DIST = 0.1f;
 float configuration::FAR_CLIPPING_PLANE_DIST = 100.0f;
 float configuration::FOV = 45.0f;
 float configuration::CAMERA_OFFSET = 7.5f;
+
+const int cubeCount = 15;
+glm::vec3 cubePositions[] =
+{
+	glm::vec3(0.0f, 0.0f, 0.0f),
+	glm::vec3(-2.0f, 0.0f, 0.0f),
+	glm::vec3(-2.0f, 2.0f, 0.0f),
+	glm::vec3(0.0f, 2.0f, 0.0f),
+	glm::vec3(2.0f, 2.0f, 0.0f),
+	glm::vec3(2.0f, 0.0f, 0.0f),
+	glm::vec3(2.0f, -2.0f, 0.0f),
+	glm::vec3(0.0f, -2.0f, 0.0f),
+	glm::vec3(-2.0f, -2.0f, 0.0f),
+	glm::vec3(-4.0f, -2.0f, 0.0f),
+	glm::vec3(-4.0f, 0.0f, 0.0f),
+	glm::vec3(-4.0f, 2.0f, 0.0f),
+	glm::vec3(4.0f, -2.0f, 0.0f),
+	glm::vec3(4.0f, 0.0f, 0.0f),
+	glm::vec3(4.0f, 2.0f, 0.0f),
+};
 
 void processInput(GLFWwindow* window)
 {
@@ -50,40 +68,15 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	WINDOW_WIDTH = width;
 	WINDOW_HEIGHT = height;
-	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+	/*glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0,
 		GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);*/
 	/*glBindRenderbuffer(GL_RENDERBUFFER, rbo);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);*/
 	glViewport(0, 0, width, height);
 	std::cout << "---RESIZED---" << std::endl;
-}
-
-//glm::mat4 getPerspective() 
-//{
-//	return glm::perspective(glm::radians(FOV), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT,
-//		NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);
-//}
-
-int* getCheckerboardPattern(const int width, const int height) 
-{
-	int n = height * width; // 480 000 words (each 4 bytes)
-	int* data = new int[n];
-	const int fill = 0xFF;
-	int a = fill;
-	for (int i = 0; i < height; ++i) 
-	{
-		for (int j = 0; j < width; ++j) 
-		{
-			data[i * width + j] = a;
-			a ^= fill;
-		}
-		a ^= fill;
-	}
-	//data[n] = '\0';
-	return data;
 }
 
 void config_init() 
@@ -155,101 +148,11 @@ int main()
 	shader texturedShader("shaders/simple_vertex_shader.glsl", "shaders/textured_fragment_shader.glsl");
 	texturedShader.use();
 	texturedShader.setInt("material.diffuse", 0);
-	shader screenQuadSimpleShader("shaders/fbo_to_screenquad_vertex_shader.glsl", "shaders/fbo_to_screenquad_simple_shader.glsl");
-	shader screenQuadShader("shaders/fbo_to_screenquad_vertex_shader.glsl", "shaders/fbo_to_screenquad_fragment_shader.glsl");
-	screenQuadShader.use();
-	screenQuadShader.setInt("screenTexture", 0);
-	screenQuadShader.setInt("prevScreenTexture", 1);
 
-	// TEXTURES
+	chb_fbo framebuffer(WINDOW_WIDTH, WINDOW_HEIGHT, isCheckerboardRendering);
+	framebuffer.clear_gendata();
 
-	/*int cubeTextureWidth, cubeTextureHeight, nrChannels;
-	unsigned char* textureData = stbi_load("materials/cubeTexture.jpg", &cubeTextureWidth, &cubeTextureHeight, &nrChannels, 0);
-
-	unsigned int cubeTexture;
-	glGenTextures(1, &cubeTexture);
-	glBindTexture(GL_TEXTURE_2D, cubeTexture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	if (textureData) 
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cubeTextureWidth, cubeTextureHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		std::cout << "Failed to load texture" << std::endl;
-	}
-	stbi_image_free(textureData);*/
-
-	//int width, height, nrChannels;
-	int* data = getCheckerboardPattern(WINDOW_WIDTH, WINDOW_HEIGHT);//= stbi_load("materials/ColoredCheckerboard800x600.png", &width, &height, &nrChannels, 0);
-
-	/*unsigned int checkerboardPattern;
-	glGenTextures(1, &checkerboardPattern);
-	glBindTexture(GL_TEXTURE_2D, checkerboardPattern);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, data);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	stbi_image_free(data);*/
-
-	/*glEnable(GL_DEPTH_TEST);
-	glEnable(GL_STENCIL_TEST);
-	glStencilMask(0xFF);*/
-
-	//data = stbi_load("materials/checkerboard800x600_alpha.png", &width, &height, &nrChannels, 0);
-
-	unsigned int checkerboardPatternAplha;
-	glGenTextures(1, &checkerboardPatternAplha);
-	glBindTexture(GL_TEXTURE_2D, checkerboardPatternAplha);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, data);
-	getError();
-	glBindTexture(GL_TEXTURE_2D, 0);
-	delete[] data;
-	//stbi_image_free(data);
-
-	/*unsigned int depthAttachmentTexture;
-	glGenTextures(1, &depthAttachmentTexture);
-	glBindTexture(GL_TEXTURE_2D, depthAttachmentTexture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);*/
-	/*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);*/
-	/*glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glBindTexture(GL_TEXTURE_2D, 0);*/
-
-	// STENCIL BUFFER
-	/*unsigned int sb;
-	glGenRenderbuffers(2, &sb);
-	glBindRenderbuffer(GL_RENDERBUFFER, sb);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);*/
-
-	// Вершины
-	float vertices[] = {
-		-0.5f, -0.5f, 0.0f, // левая вершина
-		 0.5f, -0.5f, 0.0f, // правая вершина
-		 0.0f,  0.5f, 0.0f  // верхняя вершина 
-	};
-
-	float vertices2[] = {
-		 1.0f,  0.5f, 0.0f, // правая вершина
-		 0.5f, -0.5f, 0.0f, // нижняя вершина
-		 0.0f,  0.5f, 0.0f  // левая вершина 
-	};
-
+	// Cube vertices
 	float cube[] = {
 		// координаты        // нормали           // текстурные координаты
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
@@ -294,21 +197,6 @@ int main()
 		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 	};
-	unsigned int indices[] = {
-		0, 1, 3, // первый треугольник
-		1, 2, 3  // второй треугольник
-	};
-
-	float quadVertices[] = { // атрибуты вершин в нормализованных координатах устройства для прямоугольника, который имеет размеры экрана 
-		 // координаты // текстурные координаты
-		-1.0f,  1.0f,  0.0f, 1.0f,
-		-1.0f, -1.0f,  0.0f, 0.0f,
-		 1.0f, -1.0f,  1.0f, 0.0f,
-
-		-1.0f,  1.0f,  0.0f, 1.0f,
-		 1.0f, -1.0f,  1.0f, 0.0f,
-		 1.0f,  1.0f,  1.0f, 1.0f
-	};
 
 	// MESH
 	mesh cubeMesh;
@@ -332,89 +220,10 @@ int main()
 	cube_object.set_global_light(&globalLight);
 	cube_object.gen_buffers();
 
-	// VBO, VAO, EBO
-	//unsigned int VBO, VAO, EBO;
-	//glGenBuffers(1, &VBO);
-	//glGenVertexArrays(1, &VAO);
-	//glGenBuffers(1, &EBO);
-	//glBindVertexArray(VAO);
-	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	//// Координатные атрибуты
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	//glEnableVertexAttribArray(0);
-	//// Атрибуты нормалей
-	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	//glEnableVertexAttribArray(1);
-	//// Атрибуты текстуры
-	//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	//glEnableVertexAttribArray(2);
-
-	// VAO прямоугольника
-	unsigned int quadVAO, quadVBO;
-	glGenVertexArrays(1, &quadVAO);
-	glGenBuffers(1, &quadVBO);
-	glBindVertexArray(quadVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
-	// FBO
-	unsigned int framebuffer;
-	glGenFramebuffers(1, &framebuffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
-	// Генерируем текстуру
-	//unsigned int texColorBuffer; // объявляется выше
-	glGenTextures(1, &texColorBuffer);
-	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0,
-		GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	// Прикрепляем её к текущему связанному объекту фреймбуфера
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, checkerboardPatternAplha, 0);
-	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthAttachmentTexture, 0);
-
-	// RBO
-	//unsigned int rbo; // объявляется выше
-	//glGenRenderbuffers(1, &rbo);
-	//glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, WINDOW_WIDTH, WINDOW_HEIGHT);
-	//glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
-	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-
-	auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if (fboStatus == GL_FRAMEBUFFER_UNSUPPORTED)
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete! :: " << fboStatus << std::endl;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	// Генерируем текстуру для реконструкции кадра
-	glGenTextures(1, &prevTexColorBuffer);
-	glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0,
-		GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
 	// BACKGROUND
 	glClearColor(0.14901f, 0.16862f, 0.17647f, 1.0f);
 
 	float lastFrame = 0.0f;
-	bool isEvenFrame = false;
 
 	// Цикл рендеринга
 	while (!glfwWindowShouldClose(window)) 
@@ -427,137 +236,26 @@ int main()
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 		// drawing | Первый проход
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+		framebuffer.use();
 		glEnable(GL_DEPTH_TEST);
-		if (isCheckerboardRendering) 
-		{
-			glEnable(GL_STENCIL_TEST);
-			glStencilFunc(GL_EQUAL, 255 * isEvenFrame, 255);
-			/*if (isEvenFrame == 0)
-				glStencilFunc(GL_EQUAL, 0, 255);
-			else
-				glStencilFunc(GL_EQUAL, 255, 255);*/
-
-			if (!isEvenFrame) 
-			{
-				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
-			}
-			else
-			{
-				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, prevTexColorBuffer, 0);
-			}
-		}
-		//glEnable(GL_COLOR_LOGIC_OP);
-		//glLogicOp(GL_NOOP);
+		framebuffer.prerender_call();
 		glClearColor(0.14901f, 0.16862f, 0.17647f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-		cube_object.set_position(glm::vec3(0.0f, 0.0f, 0.0f), model);
-		cube_object.render();
-		cube_object.set_position(glm::vec3(-2.0f, 0.0f, 0.0f), model);
-		cube_object.render();
-		cube_object.set_position(glm::vec3(-2.0f, 2.0f, 0.0f), model);
-		cube_object.render();
-		cube_object.set_position(glm::vec3(0.0f, 2.0f, 0.0f), model);
-		cube_object.render();
-		cube_object.set_position(glm::vec3(2.0f, 2.0f, 0.0f), model);
-		cube_object.render();
-		cube_object.set_position(glm::vec3(2.0f, 0.0f, 0.0f), model);
-		cube_object.render();
-		cube_object.set_position(glm::vec3(2.0f, -2.0f, 0.0f), model);
-		cube_object.render();
-		cube_object.set_position(glm::vec3(0.0f, -2.0f, 0.0f), model);
-		cube_object.render();
-		cube_object.set_position(glm::vec3(-2.0f, -2.0f, 0.0f), model);
-		cube_object.render();
-
-		//solidColorYellow.use();
-		//texturedShader.use();
-		////lightingShader.setVec3("objectColor", yellow.x, yellow.y, yellow.z);
-		////texturedShader.setVec3("lightColor", globalLightColor.x, globalLightColor.y, globalLightColor.z);
-		//texturedShader.setVec3("viewPos", cameraPos.x, cameraPos.y, cameraPos.z);
-		////texturedShader.setVec3("material.ambient", yellow.x, yellow.y, yellow.z);
-		////texturedShader.setVec3("material.diffuse", yellow.x, yellow.y, yellow.z);
-		//texturedShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
-		//texturedShader.setFloat("material.shininess", 32.0f);
-		//texturedShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-		//texturedShader.setVec3("light.diffuse", 0.9f, 0.9f, 0.9f); 
-		//texturedShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-		//texturedShader.setVec3("light.position", lightPos.x, lightPos.y, lightPos.z);
-
-		//glm::mat4 model = glm::mat4(1.0f);
-		////model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		//model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-		//glm::mat4 view = glm::mat4(1.0f);
-		//view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-		//int modelLoc = glGetUniformLocation(lightingShader.ID, "model");
-		//glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		//int viewLoc = glGetUniformLocation(lightingShader.ID, "view");
-		//glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		//int projLoc = glGetUniformLocation(lightingShader.ID, "projection");
-		//glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(getPerspective()));
-		//glBindVertexArray(VAO);
-		////glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, cubeTexture);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
+		for (int i = 0; i < cubeCount; ++i) 
+		{
+			cube_object.set_position(cubePositions[i], model);
+			cube_object.render();
+		}
 
 		// UI SECTION
 		if (isFpsCounter)
-			ui.render_text(textShader, std::to_string(fps.get_fps()), 25.0f, /*25.0f*/ WINDOW_HEIGHT - ui.get_font_size(), 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+			ui.render_text(textShader, std::to_string(fps.get_fps()), 25.0f, /*25.0f*/ WINDOW_HEIGHT - ui.get_font_size(), 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
 		// drawing | Второй проход (в screen quad)
-		glBindFramebuffer(GL_FRAMEBUFFER, 0); // назад к значениям по умолчанию
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_STENCIL_TEST);
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		if (isCheckerboardRendering) 
-		{
-			screenQuadShader.use();
-
-			//if (!isEvenFrame) 
-			//{
-				glActiveTexture(GL_TEXTURE0 + isEvenFrame);
-				glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-				glActiveTexture(GL_TEXTURE0 + !isEvenFrame);
-				glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
-			//}
-			/*else 
-			{
-				glActiveTexture(GL_TEXTURE0 + 0);
-				glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
-				glActiveTexture(GL_TEXTURE0 + 1);
-				glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-			}*/
-
-			//frameNum = ++frameNum & 1;
-			screenQuadShader.setBool("isEvenFrame", isEvenFrame);
-		}
-		else 
-		{
-			screenQuadSimpleShader.use();
-			glActiveTexture(GL_TEXTURE0 + 0);
-			glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-		}
-		/*
-		glActiveTexture(GL_TEXTURE0 + 1);
-		glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);*/
-		glBindVertexArray(quadVAO);
-		//glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		/*if (isCheckerboardRendering) 
-		{
-			glBindTexture(GL_TEXTURE_2D, prevTexColorBuffer);
-			glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-			frameNum = ++frameNum & 1;
-			screenQuadShader.setBool("isEvenFrame", frameNum);
-		}*/
+		framebuffer.postrender_call();
 			
 		// Проверка и обработка событий, обмен содержимого буферов
 		glfwSwapInterval(0);
@@ -569,16 +267,7 @@ int main()
 		deltaTime = currentFrame - lastFrame;
 		fps.add_frame(deltaTime);
 		lastFrame = currentFrame;
-		//std::cout << "frame time: " << deltaTime << std::endl;
-		//std::cout << "frame num: " << frameNum << std::endl;
-		//frameNum = ++frameNum & 1;
-		//screenQuadShader.setBool("isEvenFrame", frameNum);
-		isEvenFrame = !isEvenFrame;
 	}
-
-	//glDeleteBuffers(1, &VBO);
-	//glDeleteVertexArrays(1, &VAO);
-	//glDeleteBuffers(1, &EBO);
 
 	glfwTerminate();
 	fps.log_in_file();

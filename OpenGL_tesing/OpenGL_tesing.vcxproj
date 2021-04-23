@@ -154,6 +154,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="chb_fbo.cpp" />
     <ClCompile Include="configuration.cpp" />
     <ClCompile Include="frames_counter.cpp" />
     <ClCompile Include="game_object.cpp" />
@@ -164,6 +165,7 @@
     <ClCompile Include="ui_module.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="chb_fbo.h" />
     <ClInclude Include="configuration.h" />
     <ClInclude Include="frames_counter.h" />
     <ClInclude Include="game_object.h" />
