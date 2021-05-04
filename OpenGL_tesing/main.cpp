@@ -6,7 +6,6 @@
 #include <iostream>
 #include <string>
 #include "shader.cpp"
-//#include "stb_image.h"
 #include "configuration.h"
 #include "ui_module.h"
 #include "frames_counter.h"
@@ -28,6 +27,8 @@ const float FOV = 45.0f;
 const glm::vec3 cameraPos(0.0f, 0.0f, 3.0f);
 const glm::vec3 lightInitPos(2.0f, 1.0f, 5.0f);
 const glm::vec3 globalLightColor(1.0f, 1.0f, 1.0f);
+int cube_rotation_speed = 1;
+bool msaa_enabled = false;
 
 float deltaTime = 0.0f;
 
@@ -36,9 +37,11 @@ int configuration::WINDOW_HEIGHT = 600;
 float configuration::NEAR_CLIPPING_PLANE_DIST = 0.1f;
 float configuration::FAR_CLIPPING_PLANE_DIST = 100.0f;
 float configuration::FOV = 45.0f;
-float configuration::CAMERA_OFFSET = 7.5f;
+float configuration::CAMERA_OFFSET = 6.5f;
 
-const int cubeCount = 15;
+chb_fbo* framebuffer = nullptr;
+
+int cubeCount = 43;
 glm::vec3 cubePositions[] =
 {
 	glm::vec3(0.0f, 0.0f, 0.0f),
@@ -56,6 +59,35 @@ glm::vec3 cubePositions[] =
 	glm::vec3(4.0f, -2.0f, 0.0f),
 	glm::vec3(4.0f, 0.0f, 0.0f),
 	glm::vec3(4.0f, 2.0f, 0.0f),
+	glm::vec3(3.0f, 1.0f, 0.0f),
+	glm::vec3(3.0f, -1.0f, 0.0f),
+	glm::vec3(-3.0f, 1.0f, 0.0f),
+	glm::vec3(-3.0f, -1.0f, 0.0f),
+	glm::vec3(-1.0f, -1.0f, 0.0f),
+	glm::vec3(-1.0f, 1.0f, 0.0f),
+	glm::vec3(1.0f, -1.0f, 0.0f),
+	glm::vec3(1.0f, 1.0f, 0.0f),
+
+	glm::vec3(-1.0f, 0.0f, -1.0f),
+	glm::vec3(-3.0f, 0.0f, -1.0f),
+	glm::vec3(-3.0f, 2.0f, -1.0f),
+	glm::vec3(-1.0f, 2.0f, -1.0f),
+	glm::vec3(1.0f, 2.0f, -1.0f),
+	glm::vec3(1.0f, 0.0f, -1.0f),
+	glm::vec3(1.0f, -2.0f, -1.0f),
+	glm::vec3(-1.0f, -2.0f, -1.0f),
+	glm::vec3(-3.0f, -2.0f, -1.0f),
+	glm::vec3(3.0f, -2.0f, -1.0f),
+	glm::vec3(3.0f, 0.0f, -1.0f),
+	glm::vec3(3.0f, 2.0f, -1.0f),
+	glm::vec3(2.0f, 1.0f, -1.0f),
+	glm::vec3(2.0f, -1.0f, -1.0f),
+	glm::vec3(-4.0f, 1.0f, -1.0f),
+	glm::vec3(-4.0f, -1.0f, -1.0f),
+	glm::vec3(-2.0f, -1.0f, -1.0f),
+	glm::vec3(-2.0f, 1.0f, -1.0f),
+	glm::vec3(0.0f, -1.0f, -1.0f),
+	glm::vec3(0.0f, 1.0f, -1.0f),
 };
 
 void processInput(GLFWwindow* window)
@@ -68,6 +100,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	WINDOW_WIDTH = width;
 	WINDOW_HEIGHT = height;
+	configuration::WINDOW_WIDTH = width;
+	configuration::WINDOW_HEIGHT = height;
 	/*glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0,
 		GL_RGB, GL_UNSIGNED_BYTE, NULL);
@@ -76,6 +110,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);*/
 	glViewport(0, 0, width, height);
+	framebuffer->resize(width, height);
 	std::cout << "---RESIZED---" << std::endl;
 }
 
@@ -87,6 +122,9 @@ void config_init()
 	isCarcasMode = config["carcas_mode"];
 	isFpsCounter = config["fps_counter"];
 	isCheckerboardRendering = config["checkerboard_r"];
+	cube_rotation_speed = config["cube_rotation_speed"];
+	cubeCount = config["cube_count"];
+	msaa_enabled = config["msaa"];
 }
 
 void getError() 
@@ -105,6 +143,8 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	if (msaa_enabled)
+		glfwWindowHint(GLFW_SAMPLES, 4);
 
 #ifdef __APPLE__
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); 
@@ -141,6 +181,7 @@ int main()
 	glm::vec3 lightPos(lightInitPos);
 	shader textShader("shaders/text_vertex_shader.glsl", "shaders/text_fragment_shader.glsl");
 	textShader.use();
+	// must do it before resize
 	glUniformMatrix4fv(glGetUniformLocation(textShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(ortho));
 	shader solidColorOrange("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_orange.glsl");
 	shader solidColorYellow("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_yellow.glsl");
@@ -149,8 +190,8 @@ int main()
 	texturedShader.use();
 	texturedShader.setInt("material.diffuse", 0);
 
-	chb_fbo framebuffer(WINDOW_WIDTH, WINDOW_HEIGHT, isCheckerboardRendering);
-	framebuffer.clear_gendata();
+	framebuffer = new chb_fbo(WINDOW_WIDTH, WINDOW_HEIGHT, isCheckerboardRendering);
+	framebuffer->clear_gendata();
 
 	// Cube vertices
 	float cube[] = {
@@ -222,6 +263,8 @@ int main()
 
 	// BACKGROUND
 	glClearColor(0.14901f, 0.16862f, 0.17647f, 1.0f);
+	if (msaa_enabled)
+		glEnable(GL_MULTISAMPLE);
 
 	float lastFrame = 0.0f;
 
@@ -236,14 +279,14 @@ int main()
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 		// drawing | Первый проход
-		framebuffer.use();
+		framebuffer->use();
 		glEnable(GL_DEPTH_TEST);
-		framebuffer.prerender_call();
+		framebuffer->prerender_call();
 		glClearColor(0.14901f, 0.16862f, 0.17647f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f) * cube_rotation_speed, glm::vec3(0.5f, 1.0f, 0.0f));
 		for (int i = 0; i < cubeCount; ++i) 
 		{
 			cube_object.set_position(cubePositions[i], model);
@@ -255,7 +298,7 @@ int main()
 			ui.render_text(textShader, std::to_string(fps.get_fps()), 25.0f, /*25.0f*/ WINDOW_HEIGHT - ui.get_font_size(), 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
 		// drawing | Второй проход (в screen quad)
-		framebuffer.postrender_call();
+		framebuffer->postrender_call();
 			
 		// Проверка и обработка событий, обмен содержимого буферов
 		glfwSwapInterval(0);
@@ -269,6 +312,8 @@ int main()
 		lastFrame = currentFrame;
 	}
 
+	framebuffer->terminate();
+	delete framebuffer;
 	glfwTerminate();
 	fps.log_in_file();
 	return 0;

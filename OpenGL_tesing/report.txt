@@ -1,1 +1,2 @@
-average fps = 451
+average fps = 72
+average frametime = 0.107017

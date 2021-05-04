@@ -1,14 +1,18 @@
+#include <iostream>
+#include <fstream>
+
 #pragma once
 class frames_counter
 {
 private:
 	const std::string file_name = "report.txt";
 	size_t total_frames_count = 0;
+	double total_frametime = 0.0f;
 	int measurements_count = 0;
 	int frames_count = 0;
 	int fps = 0;
 	double timer = 0.0f;
-	double period = 0.0f;
+	double period = 1.0f;
 	void reset();
 
 public:

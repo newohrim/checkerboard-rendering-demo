@@ -28,7 +28,6 @@ void chb_fbo::create_screentex()
 	glBindTexture(GL_TEXTURE_2D, screen_texeven);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, fbo_width, fbo_height, 0,
 		GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST + filter_linear);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST + filter_linear);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -85,7 +84,8 @@ void chb_fbo::use()
 
 void chb_fbo::clear_gendata()
 {
-	delete[] checkerboard;
+	if (checkerboard != NULL)
+		delete[] checkerboard;
 	checkerboard = nullptr;
 }
 
@@ -163,6 +163,32 @@ void chb_fbo::postrender_call()
 	is_oddframe = !is_oddframe;
 }
 
+void chb_fbo::terminate()
+{
+	glDeleteBuffers(1, &screen_quadVBO);
+	glDeleteVertexArrays(1, &screen_quadVAO);
+	glDeleteTextures(1, &screen_texeven);
+	glDeleteTextures(1, &screen_texodd);
+	simple_screenquadshader->terminate();
+	chb_screenquadshader->terminate();
+}
+
+void chb_fbo::resize(int width, int height)
+{
+	glDeleteTextures(1, &screen_texeven);
+	glDeleteTextures(1, &screen_texodd);
+	use();
+	glClear(GL_STENCIL_BUFFER_BIT);
+	fbo_width = width;
+	fbo_height = height;
+	clear_gendata();
+	create_chbtex();
+	create_screentex();
+	set_attachments();
+	fbo_checkerror();
+	is_oddframe = false;
+}
+
 chb_fbo::chb_fbo(const int width, const int height, bool checkerboard_mode, int quad_VAO, bool filtermode_linear) :
 	fbo_width(width), fbo_height(height), chb_active(checkerboard_mode), filter_linear(filtermode_linear)
 {
@@ -186,8 +212,8 @@ chb_fbo::chb_fbo(const int width, const int height, bool checkerboard_mode, int 
 
 chb_fbo::~chb_fbo()
 {
-	glDeleteBuffers(1, &screen_quadVBO);
-	glDeleteVertexArrays(1, &screen_quadVAO);
+	//glDeleteBuffers(1, &screen_quadVBO);
+	//glDeleteVertexArrays(1, &screen_quadVAO);
 	if (checkerboard != NULL)
 		delete[] checkerboard;
 	delete simple_screenquadshader;

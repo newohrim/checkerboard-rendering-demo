@@ -11,8 +11,8 @@ private:
 	const char* PATH_TO_SIMPLEFRAGMENTSHADER = "shaders/fbo_to_screenquad_simple_shader.glsl";
 	const char* PATH_TO_CHBFRAGMENTSHADER = "shaders/fbo_to_screenquad_fragment_shader.glsl";
 	unsigned int fbo_id;
-	const int fbo_width;
-	const int fbo_height;
+	int fbo_width;
+	int fbo_height;
 	int* checkerboard;
 	unsigned int checkerboard_tex;
 	unsigned int screen_texeven;
@@ -48,6 +48,8 @@ public:
 	int* getCheckerboardPattern(const int width, const int height);
 	void prerender_call();
 	void postrender_call();
+	void terminate();
+	void resize(int width, int height);
 	chb_fbo(const int width, const int height, bool checkerboard_mode = true, int quad_VAO = -1, bool filtermode_linear = true);
 	~chb_fbo();
 };

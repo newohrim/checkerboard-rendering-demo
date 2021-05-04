@@ -1,5 +1,3 @@
-#include <iostream>
-#include <fstream>
 #include "frames_counter.h"
 
 void frames_counter::reset()
@@ -13,8 +11,10 @@ void frames_counter::log_in_file()
 	std::ofstream out(file_name);
 	if (!out.is_open())
 		std::cout << "CONFIG::ERROR : Unable to open report file." << std::endl;
-	int average_fps = total_frames_count / measurements_count;
-	out << "average fps = " << average_fps;
+	float average_fps = total_frames_count / (float)measurements_count;
+	float average_frametime = (float)(total_frametime / measurements_count);
+	out << "average fps = " << average_fps << std::endl;
+	out << "average frametime = " << average_frametime << std::endl;
 	out.close();
 }
 
@@ -29,10 +29,11 @@ void frames_counter::add_frame(const double frame_time)
 {
 	++frames_count;
 	timer += frame_time;
-	if (timer >= 1.0f) 
+	if (timer >= period) 
 	{
 		fps = frames_count;
 		total_frames_count += frames_count;
+		total_frametime += frame_time;
 		++measurements_count;
 		reset();
 	}

@@ -102,6 +102,11 @@ public:
         glUniform3f(glGetUniformLocation(ID, name.c_str()), x, y, z);
     }
 
+    void terminate() 
+    {
+        glDeleteShader(ID);
+    }
+
 private:
     // Полезные функции для проверки ошибок компиляции/связывания шейдеров
     void checkCompileErrors(unsigned int shader, std::string type)
