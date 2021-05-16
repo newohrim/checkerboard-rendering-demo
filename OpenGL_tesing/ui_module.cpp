@@ -59,6 +59,14 @@ void ui_module::render_text(shader& text_shader, std::string text, float x, floa
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void ui_module::terminate()
+{
+    for (auto& c : characters)
+        glDeleteTextures(1, &c.second.texture_id);
+    glDeleteVertexArrays(1, &text_VAO);
+    glDeleteBuffers(1, &text_VBO);
+}
+
 int ui_module::init(const char* text_font)
 {
     //FT_Library ft;

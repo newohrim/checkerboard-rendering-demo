@@ -14,13 +14,10 @@ void configuration::init()
         config_data[parts[0]] = stoi(parts[1]);
     }
     in.close();
+    check_values();
 
     WINDOW_WIDTH = config_data["window_width"];
     WINDOW_HEIGHT = config_data["window_height"];
-    //NEAR_CLIPPING_PLANE_DIST = 0.1f;
-    //FAR_CLIPPING_PLANE_DIST = 100.0f;
-    //FOV = 45.0f;
-    //CAMERA_OFFSET = 10.0f;
 }
 
 vector<string> configuration::split(const string& sequence)
@@ -42,4 +39,54 @@ vector<string> configuration::split(const string& sequence)
     }
 
     return words;
+}
+
+void configuration::check_values()
+{
+    int value = config_data["window_width"];
+    if (value < MIN_WINDOW_WIDTH || value > MAX_WINDOW_WIDTH || value % 2 == 1) 
+    {
+        std::cout << "ERROR::CONFIG window_width must be an even value at least " << MIN_WINDOW_WIDTH <<
+            " and at most " << MAX_WINDOW_WIDTH << endl;
+        config_data["window_width"] = DEFFAULT_WINDOW_WIDTH;
+    }
+    value = config_data["window_height"];
+    if (value < MIN_WINDOW_HEIGHT || value > MAX_WINDOW_HEIGHT || value % 2 == 1)
+    {
+        std::cout << "ERROR::CONFIG window_height must be an even value at least " << MIN_WINDOW_HEIGHT <<
+            " and at most " << MAX_WINDOW_HEIGHT << endl;
+        config_data["window_height"] = DEFFAULT_WINDOW_HEIGHT;
+    }
+    value = config_data["cube_rotation_speed"];
+    if (value < MIN_ROTATION_SPEED || value > MAX_ROTATION_SPEED)
+    {
+        std::cout << "ERROR::CONFIG cube_rotation_speed must be at least " << MIN_ROTATION_SPEED <<
+            " and at most " << MAX_ROTATION_SPEED << endl;
+        config_data["cube_rotation_speed"] = DEFFAULT_ROTATION_SPEED;
+    }
+    value = config_data["cube_count"];
+    if (value < MIN_CUBE_COUNT || value > MAX_CUBE_COUNT)
+    {
+        std::cout << "ERROR::CONFIG cube_count must at least " << MIN_CUBE_COUNT <<
+            " and at most " << MAX_CUBE_COUNT << endl;
+        config_data["cube_count"] = DEFFAULT_CUBE_COUNT;
+    }
+    value = config_data["checkerboard_r"];
+    if (value < 0 || value > 1) 
+    {
+        std::cout << "ERROR::CONFIG checkerboard_r must be at least " << 0 << " and at most " << 1 << endl;
+        config_data["checkerboard_r"] = 1;
+    }
+    value = config_data["fps_counter"];
+    if (value < 0 || value > 1)
+    {
+        std::cout << "ERROR::CONFIG fps_counter must be at least " << 0 << " and at most " << 1 << endl;
+        config_data["fps_counter"] = 1;
+    }
+    value = config_data["carcas_mode"];
+    if (value < 0 || value > 1)
+    {
+        std::cout << "ERROR::CONFIG carcas_mode must be at least " << 0 << " and at most " << 1 << endl;
+        config_data["carcas_mode"] = 0;
+    }
 }

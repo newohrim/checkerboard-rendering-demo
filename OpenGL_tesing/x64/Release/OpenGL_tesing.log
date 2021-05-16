@@ -1,13 +1,15 @@
-﻿  main.cpp
+﻿  chb_fbo.cpp
+C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\shader.cpp(47,41): warning C4101: e: неиспользованная локальная переменная
+  main.cpp
 C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\shader.cpp(47,41): warning C4101: e: неиспользованная локальная переменная
 C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(12,10): warning C4067: непредвиденные лексемы за директивой препроцессора, требуется newline
 C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(13,10): warning C4067: непредвиденные лексемы за директивой препроцессора, требуется newline
-C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(298,93): warning C4244: аргумент: преобразование "int" в "float", возможна потеря данных
-C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(309,22): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
+C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(281,44): warning C4244: аргумент: преобразование "int" в "float", возможна потеря данных
+C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(292,22): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
 LINK : warning LNK4098: библиотека по умолчанию "MSVCRTD" конфликтует с использованием других библиотек; используйте /NODEFAULTLIB:library
   Создание кода
-  2 of 788 functions ( 0.3%) were compiled, the rest were copied from previous compilation.
+  3 of 798 functions ( 0.4%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    15 functions had inline decision re-evaluated but remain unchanged
+    8 functions had inline decision re-evaluated but remain unchanged
   Создание кода завершено
   OpenGL_tesing.vcxproj -> C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\x64\Release\OpenGL_tesing.exe

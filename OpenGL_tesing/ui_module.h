@@ -25,6 +25,7 @@ public:
 	}
 	void load_characters();
 	void render_text(shader& text_shader, std::string text, float x, float y, float scale, glm::vec3 color);
+	void terminate();
 private:
 	FT_Library ft;
 	FT_Face face;

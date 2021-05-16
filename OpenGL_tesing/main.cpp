@@ -15,20 +15,14 @@
 configuration config;
 ui_module ui("fonts/arial.ttf");
 frames_counter fps;
+chb_fbo* framebuffer = nullptr;
 
-int WINDOW_WIDTH = 800;
-int WINDOW_HEIGHT = 600;
 bool isCarcasMode = false;
 bool isFpsCounter = false;
 bool isCheckerboardRendering = true;
-const float NEAR_CLIPPING_PLANE_DIST = 0.1f;
-const float FAR_CLIPPING_PLANE_DIST = 100.0f;
-const float FOV = 45.0f;
-const glm::vec3 cameraPos(0.0f, 0.0f, 3.0f);
 const glm::vec3 lightInitPos(2.0f, 1.0f, 5.0f);
-const glm::vec3 globalLightColor(1.0f, 1.0f, 1.0f);
 int cube_rotation_speed = 1;
-bool msaa_enabled = false;
+int interp_count = 1;
 
 float deltaTime = 0.0f;
 
@@ -38,8 +32,6 @@ float configuration::NEAR_CLIPPING_PLANE_DIST = 0.1f;
 float configuration::FAR_CLIPPING_PLANE_DIST = 100.0f;
 float configuration::FOV = 45.0f;
 float configuration::CAMERA_OFFSET = 6.5f;
-
-chb_fbo* framebuffer = nullptr;
 
 int cubeCount = 43;
 glm::vec3 cubePositions[] =
@@ -98,17 +90,8 @@ void processInput(GLFWwindow* window)
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-	WINDOW_WIDTH = width;
-	WINDOW_HEIGHT = height;
 	configuration::WINDOW_WIDTH = width;
 	configuration::WINDOW_HEIGHT = height;
-	/*glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0,
-		GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glBindTexture(GL_TEXTURE_2D, 0);*/
-	/*glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);*/
 	glViewport(0, 0, width, height);
 	framebuffer->resize(width, height);
 	std::cout << "---RESIZED---" << std::endl;
@@ -117,14 +100,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 void config_init() 
 {
 	config.init();
-	WINDOW_WIDTH = config["window_width"];
-	WINDOW_HEIGHT = config["window_height"];
 	isCarcasMode = config["carcas_mode"];
 	isFpsCounter = config["fps_counter"];
 	isCheckerboardRendering = config["checkerboard_r"];
 	cube_rotation_speed = config["cube_rotation_speed"];
 	cubeCount = config["cube_count"];
-	msaa_enabled = config["msaa"];
+	interp_count = config["interpolation_count"];
 }
 
 void getError() 
@@ -143,14 +124,15 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	if (msaa_enabled)
-		glfwWindowHint(GLFW_SAMPLES, 4);
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	/*if (msaa_enabled)
+		glfwWindowHint(GLFW_SAMPLES, 4);*/
 
 #ifdef __APPLE__
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); 
 #endif
 
-	GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "My window", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(configuration::WINDOW_WIDTH, configuration::WINDOW_HEIGHT, "My window", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -169,9 +151,9 @@ int main()
 	ui.set_font_size(48);
 	ui.load_characters();
 	
-	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	glViewport(0, 0, configuration::WINDOW_WIDTH, configuration::WINDOW_HEIGHT);
 	// Создание матрицы ортографической проекции
-	glm::mat4 ortho = glm::ortho(0.0f, static_cast<float>(WINDOW_WIDTH), 0.0f, static_cast<float>(WINDOW_HEIGHT));
+	glm::mat4 ortho = glm::ortho(0.0f, static_cast<float>(configuration::WINDOW_WIDTH), 0.0f, static_cast<float>(configuration::WINDOW_HEIGHT));
 	// Создание матрицы перспективной проекции проекции
 	/*glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT,
 		NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);*/
@@ -190,7 +172,7 @@ int main()
 	texturedShader.use();
 	texturedShader.setInt("material.diffuse", 0);
 
-	framebuffer = new chb_fbo(WINDOW_WIDTH, WINDOW_HEIGHT, isCheckerboardRendering);
+	framebuffer = new chb_fbo(configuration::WINDOW_WIDTH, configuration::WINDOW_HEIGHT, isCheckerboardRendering, interp_count);
 	framebuffer->clear_gendata();
 
 	// Cube vertices
@@ -263,8 +245,8 @@ int main()
 
 	// BACKGROUND
 	glClearColor(0.14901f, 0.16862f, 0.17647f, 1.0f);
-	if (msaa_enabled)
-		glEnable(GL_MULTISAMPLE);
+	/*if (msaa_enabled)
+		glEnable(GL_MULTISAMPLE);*/
 
 	float lastFrame = 0.0f;
 
@@ -295,9 +277,10 @@ int main()
 
 		// UI SECTION
 		if (isFpsCounter)
-			ui.render_text(textShader, std::to_string(fps.get_fps()), 25.0f, /*25.0f*/ WINDOW_HEIGHT - ui.get_font_size(), 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+			ui.render_text(textShader, std::to_string(fps.get_fps()), 25.0f, 
+				/*25.0f*/ configuration::WINDOW_HEIGHT - ui.get_font_size(), 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
-		// drawing | Второй проход (в screen quad)
+		// drawing | Второй проход
 		framebuffer->postrender_call();
 			
 		// Проверка и обработка событий, обмен содержимого буферов
@@ -314,6 +297,7 @@ int main()
 
 	framebuffer->terminate();
 	delete framebuffer;
+	ui.terminate();
 	glfwTerminate();
 	fps.log_in_file();
 	return 0;

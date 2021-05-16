@@ -27,6 +27,8 @@ void frames_counter::set_period(const double update_period)
 
 void frames_counter::add_frame(const double frame_time)
 {
+	if (lock++ < FIRST_FRAMES_IGNORE_COUNT)
+		return;
 	++frames_count;
 	timer += frame_time;
 	if (timer >= period) 

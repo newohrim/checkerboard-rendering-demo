@@ -10,6 +10,7 @@ private:
 	const char* PATH_TO_VERTEXSHADER = "shaders/fbo_to_screenquad_vertex_shader.glsl";
 	const char* PATH_TO_SIMPLEFRAGMENTSHADER = "shaders/fbo_to_screenquad_simple_shader.glsl";
 	const char* PATH_TO_CHBFRAGMENTSHADER = "shaders/fbo_to_screenquad_fragment_shader.glsl";
+	const char* PATH_TO_CHBFRAGMENTSHADERINTERPOLATED = "shaders/fbo_to_screenquad_fragment_shader_interpolated.glsl";
 	unsigned int fbo_id;
 	int fbo_width;
 	int fbo_height;
@@ -22,6 +23,7 @@ private:
 	const bool filter_linear = true;
 	bool is_oddframe = false;
 	const bool chb_active = true;
+	const int interpolation_count = 0;
 	shader* simple_screenquadshader;
 	shader* chb_screenquadshader;
 	void create_fbo();
@@ -50,7 +52,8 @@ public:
 	void postrender_call();
 	void terminate();
 	void resize(int width, int height);
-	chb_fbo(const int width, const int height, bool checkerboard_mode = true, int quad_VAO = -1, bool filtermode_linear = true);
+	void restore_checkerboard();
+	chb_fbo(const int width, const int height, bool checkerboard_mode = true, int interpolation = 0, int quad_VAO = -1, bool filtermode_linear = true);
 	~chb_fbo();
 };
 

@@ -102,6 +102,7 @@ int* chb_fbo::getCheckerboardPattern(const int width, const int height)
 	int* data = new int[n];
 	const int fill = 0xFF;
 	int a = fill;
+	bool width_odd = width & 1;
 	for (int i = 0; i < height; ++i)
 	{
 		for (int j = 0; j < width; ++j)
@@ -109,7 +110,8 @@ int* chb_fbo::getCheckerboardPattern(const int width, const int height)
 			data[i * width + j] = a;
 			a ^= fill;
 		}
-		a ^= fill;
+		if (!width_odd)
+			a ^= fill;
 	}
 	//data[n] = '\0';
 	return data;
@@ -169,16 +171,20 @@ void chb_fbo::terminate()
 	glDeleteVertexArrays(1, &screen_quadVAO);
 	glDeleteTextures(1, &screen_texeven);
 	glDeleteTextures(1, &screen_texodd);
+	glDeleteTextures(1, &checkerboard_tex);
+	glDeleteFramebuffers(1, &fbo_id);
 	simple_screenquadshader->terminate();
 	chb_screenquadshader->terminate();
+	clear_gendata();
 }
 
 void chb_fbo::resize(int width, int height)
 {
 	glDeleteTextures(1, &screen_texeven);
 	glDeleteTextures(1, &screen_texodd);
+	glDeleteTextures(1, &checkerboard_tex);
 	use();
-	glClear(GL_STENCIL_BUFFER_BIT);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	fbo_width = width;
 	fbo_height = height;
 	clear_gendata();
@@ -189,8 +195,18 @@ void chb_fbo::resize(int width, int height)
 	is_oddframe = false;
 }
 
-chb_fbo::chb_fbo(const int width, const int height, bool checkerboard_mode, int quad_VAO, bool filtermode_linear) :
-	fbo_width(width), fbo_height(height), chb_active(checkerboard_mode), filter_linear(filtermode_linear)
+void chb_fbo::restore_checkerboard()
+{
+	use();
+	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glDeleteTextures(1, &checkerboard_tex);
+	clear_gendata();
+	set_attachments();
+	is_oddframe = false;
+}
+
+chb_fbo::chb_fbo(const int width, const int height, bool checkerboard_mode, int interpolation, int quad_VAO, bool filtermode_linear) :
+	fbo_width(width), fbo_height(height), chb_active(checkerboard_mode), interpolation_count(interpolation), filter_linear(filtermode_linear)
 {
 	create_fbo();
 	create_chbtex();
@@ -204,7 +220,16 @@ chb_fbo::chb_fbo(const int width, const int height, bool checkerboard_mode, int 
 		create_screenquad();
 
 	simple_screenquadshader = new shader(PATH_TO_VERTEXSHADER, PATH_TO_SIMPLEFRAGMENTSHADER);
-	chb_screenquadshader = new shader(PATH_TO_VERTEXSHADER, PATH_TO_CHBFRAGMENTSHADER);
+	if (interpolation_count < 2) 
+	{
+		chb_screenquadshader = new shader(PATH_TO_VERTEXSHADER, PATH_TO_CHBFRAGMENTSHADER);
+	}
+	else 
+	{
+		chb_screenquadshader = new shader(PATH_TO_VERTEXSHADER, PATH_TO_CHBFRAGMENTSHADERINTERPOLATED);
+		chb_screenquadshader->use();
+		chb_screenquadshader->setInt("interp_count", interpolation_count);
+	}
 	chb_screenquadshader->use();
 	chb_screenquadshader->setInt("screenTexture", 0);
 	chb_screenquadshader->setInt("prevScreenTexture", 1);
