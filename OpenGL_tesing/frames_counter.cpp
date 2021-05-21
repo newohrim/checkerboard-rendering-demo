@@ -8,13 +8,22 @@ void frames_counter::reset()
 
 void frames_counter::log_in_file()
 {
+	if (measurements_count <= 0)
+		return;
 	std::ofstream out(file_name);
-	if (!out.is_open())
-		std::cout << "CONFIG::ERROR : Unable to open report file." << std::endl;
-	float average_fps = total_frames_count / (float)measurements_count;
-	float average_frametime = (float)(total_frametime / measurements_count);
-	out << "average fps = " << average_fps << std::endl;
-	out << "average frametime = " << average_frametime << std::endl;
+	try
+	{
+		if (!out.is_open())
+			std::cout << "CONFIG::ERROR : Unable to open report file." << std::endl;
+		float average_fps = total_frames_count / (float)measurements_count;
+		float average_frametime = (float)(total_frametime / measurements_count);
+		out << "average fps = " << average_fps << std::endl;
+		out << "average frametime = " << average_frametime << std::endl;
+	}
+	catch (std::ifstream::failure & e) 
+	{
+		std::cout << "FRAMES_COUNTER::ERROR Failed to write to file." << std::endl;
+	}
 	out.close();
 }
 

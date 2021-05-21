@@ -12,9 +12,13 @@
 #include "game_object.h";
 #include "chb_fbo.h";
 
+// CONFIG
 configuration config;
+// UI MODULE
 ui_module ui("fonts/arial.ttf");
+// FPS COUNTER
 frames_counter fps;
+// CHECKERBOARD FRAMEBUFFER OBJECT
 chb_fbo* framebuffer = nullptr;
 
 bool isCarcasMode = false;
@@ -24,8 +28,10 @@ const glm::vec3 lightInitPos(2.0f, 1.0f, 5.0f);
 int cube_rotation_speed = 1;
 int interp_count = 1;
 
+// FRAME TIME
 float deltaTime = 0.0f;
 
+// INIT GLOBAL VALUES
 int configuration::WINDOW_WIDTH = 800;
 int configuration::WINDOW_HEIGHT = 600;
 float configuration::NEAR_CLIPPING_PLANE_DIST = 0.1f;
@@ -82,21 +88,28 @@ glm::vec3 cubePositions[] =
 	glm::vec3(0.0f, 1.0f, -1.0f),
 };
 
+// Proccedes users input.
 void processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 }
 
+// Runs when window size changed
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-	configuration::WINDOW_WIDTH = width;
-	configuration::WINDOW_HEIGHT = height;
-	glViewport(0, 0, width, height);
-	framebuffer->resize(width, height);
-	std::cout << "---RESIZED---" << std::endl;
+	if (width > 0 && height > 0 && 
+		(width != configuration::WINDOW_WIDTH || height != configuration::WINDOW_HEIGHT)) 
+	{
+		configuration::WINDOW_WIDTH = width;
+		configuration::WINDOW_HEIGHT = height;
+		glViewport(0, 0, width, height);
+		framebuffer->resize(width, height);
+		std::cout << "---RESIZED---" << std::endl;
+	}
 }
 
+// Inits config
 void config_init() 
 {
 	config.init();
@@ -108,6 +121,7 @@ void config_init()
 	interp_count = config["interpolation_count"];
 }
 
+// Check for errors
 void getError() 
 {
 	auto glstatus = glGetError();
@@ -117,22 +131,21 @@ void getError()
 
 int main() 
 {
+	// CONFIG INIT
 	config_init();
 
-	// Инициализация компонентов
+	// Initialize of GLFW components
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-	/*if (msaa_enabled)
-		glfwWindowHint(GLFW_SAMPLES, 4);*/
 
 #ifdef __APPLE__
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); 
 #endif
-
-	GLFWwindow* window = glfwCreateWindow(configuration::WINDOW_WIDTH, configuration::WINDOW_HEIGHT, "My window", NULL, NULL);
+	// Creating window
+	GLFWwindow* window = glfwCreateWindow(configuration::WINDOW_WIDTH, configuration::WINDOW_HEIGHT, "Checkerboard Demo", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -141,38 +154,38 @@ int main()
 	}
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
+	
+	// Loading glad
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
 
+	// Setting font size
 	ui.set_font_size(48);
+	// Loading characters
 	ui.load_characters();
-	
+	// Setting View Port
 	glViewport(0, 0, configuration::WINDOW_WIDTH, configuration::WINDOW_HEIGHT);
-	// Создание матрицы ортографической проекции
+	// Creating matrix of orthographic projection for text
 	glm::mat4 ortho = glm::ortho(0.0f, static_cast<float>(configuration::WINDOW_WIDTH), 0.0f, static_cast<float>(configuration::WINDOW_HEIGHT));
-	// Создание матрицы перспективной проекции проекции
-	/*glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT,
-		NEAR_CLIPPING_PLANE_DIST, FAR_CLIPPING_PLANE_DIST);*/
 
 	// SHADERS
 	glm::vec3 yellow(1.0f, 1.0f, 0.0f);
 	glm::vec3 lightPos(lightInitPos);
 	shader textShader("shaders/text_vertex_shader.glsl", "shaders/text_fragment_shader.glsl");
 	textShader.use();
-	// must do it before resize
+	// must do it before resize ??
 	glUniformMatrix4fv(glGetUniformLocation(textShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(ortho));
-	shader solidColorOrange("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_orange.glsl");
-	shader solidColorYellow("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader_yellow.glsl");
 	shader lightingShader("shaders/simple_vertex_shader.glsl", "shaders/solid_color_fragment_shader.glsl");
 	shader texturedShader("shaders/simple_vertex_shader.glsl", "shaders/textured_fragment_shader.glsl");
 	texturedShader.use();
 	texturedShader.setInt("material.diffuse", 0);
 
+	// Creating checkerboard framebuffer object
 	framebuffer = new chb_fbo(configuration::WINDOW_WIDTH, configuration::WINDOW_HEIGHT, isCheckerboardRendering, interp_count);
+	// Clearing data generated for stencil texture.
 	framebuffer->clear_gendata();
 
 	// Cube vertices
@@ -245,32 +258,32 @@ int main()
 
 	// BACKGROUND
 	glClearColor(0.14901f, 0.16862f, 0.17647f, 1.0f);
-	/*if (msaa_enabled)
-		glEnable(GL_MULTISAMPLE);*/
 
 	float lastFrame = 0.0f;
 
 	// Цикл рендеринга
 	while (!glfwWindowShouldClose(window)) 
 	{
-		// Пользовательский ввод
+		// Users input
 		processInput(window);
 
 		// CARCAS MODE
 		if (isCarcasMode)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-		// drawing | Первый проход
+		// drawing | First pass
 		framebuffer->use();
 		glEnable(GL_DEPTH_TEST);
 		framebuffer->prerender_call();
 		glClearColor(0.14901f, 0.16862f, 0.17647f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// Rotating cubes around depending on time.
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f) * cube_rotation_speed, glm::vec3(0.5f, 1.0f, 0.0f));
 		for (int i = 0; i < cubeCount; ++i) 
 		{
+			// RENDER TO TEXTURE
 			cube_object.set_position(cubePositions[i], model);
 			cube_object.render();
 		}
@@ -278,12 +291,13 @@ int main()
 		// UI SECTION
 		if (isFpsCounter)
 			ui.render_text(textShader, std::to_string(fps.get_fps()), 25.0f, 
-				/*25.0f*/ configuration::WINDOW_HEIGHT - ui.get_font_size(), 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+				configuration::WINDOW_HEIGHT - ui.get_font_size() - 0.02 * configuration::WINDOW_HEIGHT, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
-		// drawing | Второй проход
+		// drawing | Second pass
+		// RENDER TO BACKBUFFER FROM TEXTURE
 		framebuffer->postrender_call();
 			
-		// Проверка и обработка событий, обмен содержимого буферов
+		// Proceeding events, swapping buffers
 		glfwSwapInterval(0);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -295,10 +309,15 @@ int main()
 		lastFrame = currentFrame;
 	}
 
+	// Termination framebuffer
 	framebuffer->terminate();
 	delete framebuffer;
+	// Ui terminates
 	ui.terminate();
+	// GLFW terminates
 	glfwTerminate();
+	// Report calculations to file.
 	fps.log_in_file();
+	// Exit.
 	return 0;
 }

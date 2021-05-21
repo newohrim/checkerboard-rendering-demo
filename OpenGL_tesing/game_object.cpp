@@ -6,7 +6,7 @@ void game_object::gen_buffers()
 	glGenVertexArrays(1, &obj_mesh.VAO);
 	glBindVertexArray(obj_mesh.VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, obj_mesh.VBO);
-	glBufferData(GL_ARRAY_BUFFER, /*sizeof(obj_mesh.vertices)*/obj_mesh.v_count * 8 * sizeof(float), obj_mesh.vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, obj_mesh.v_count * 8 * sizeof(float), obj_mesh.vertices, GL_STATIC_DRAW);
 
 	// Координатные атрибуты
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
@@ -66,9 +66,6 @@ void game_object::render()
 	obj_shader->setVec3("light.position", 
 		global_light->position.x, global_light->position.y, global_light->position.z);
 
-	//glm::mat4 model = glm::mat4(1.0f);
-	//model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	//model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 	glm::mat4 view = glm::mat4(1.0f);
 	view = glm::translate(view, glm::vec3(obj_position.world_pos.x, obj_position.world_pos.y, 
 		obj_position.world_pos.z - configuration::CAMERA_OFFSET));

@@ -78,6 +78,7 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>C:\OpenGL\Include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\OpenGL\Lib;$(LibraryPath)</LibraryPath>
+    <TargetName>CHB_DEMO</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -88,6 +89,7 @@
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>C:\OpenGL\Include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\OpenGL\Lib;$(LibraryPath)</LibraryPath>
+    <TargetName>CHB_DEMO</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
