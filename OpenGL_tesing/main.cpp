@@ -27,6 +27,7 @@ bool isCheckerboardRendering = true;
 const glm::vec3 lightInitPos(2.0f, 1.0f, 5.0f);
 int cube_rotation_speed = 1;
 int interp_count = 1;
+bool vsync = false;
 
 // FRAME TIME
 float deltaTime = 0.0f;
@@ -95,6 +96,15 @@ void processInput(GLFWwindow* window)
 		glfwSetWindowShouldClose(window, true);
 }
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) 
+	{
+		std::cout << "checkerboard mode toggled" << endl;
+		framebuffer->toggle_checkerboard();
+	}
+}
+
 // Runs when window size changed
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -119,6 +129,7 @@ void config_init()
 	cube_rotation_speed = config["cube_rotation_speed"];
 	cubeCount = config["cube_count"];
 	interp_count = config["interpolation_count"];
+	vsync = config["vsync"];
 }
 
 // Check for errors
@@ -154,6 +165,7 @@ int main()
 	}
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetKeyCallback(window, key_callback);
 	
 	// Loading glad
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -289,6 +301,7 @@ int main()
 		}
 
 		// UI SECTION
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		if (isFpsCounter)
 			ui.render_text(textShader, std::to_string(fps.get_fps()), 25.0f, 
 				configuration::WINDOW_HEIGHT - ui.get_font_size() - 0.02 * configuration::WINDOW_HEIGHT, 1.0f, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -298,7 +311,7 @@ int main()
 		framebuffer->postrender_call();
 			
 		// Proceeding events, swapping buffers
-		glfwSwapInterval(0);
+		glfwSwapInterval(vsync);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 

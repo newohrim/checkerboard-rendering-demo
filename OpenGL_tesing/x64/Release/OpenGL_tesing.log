@@ -1,23 +1,12 @@
-﻿  chb_fbo.cpp
-C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\shader.cpp(47,41): warning C4101: e: неиспользованная локальная переменная
-  configuration.cpp
-C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\configuration.cpp(19,37): warning C4101: e: неиспользованная локальная переменная
-C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\configuration.cpp(23,36): warning C4101: e: неиспользованная локальная переменная
-  frames_counter.cpp
-C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\frames_counter.cpp(23,34): warning C4101: e: неиспользованная локальная переменная
-  game_object.cpp
-C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\shader.cpp(47,41): warning C4101: e: неиспользованная локальная переменная
-  main.cpp
+﻿  main.cpp
 C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\shader.cpp(47,41): warning C4101: e: неиспользованная локальная переменная
 C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(12,10): warning C4067: непредвиденные лексемы за директивой препроцессора, требуется newline
 C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(13,10): warning C4067: непредвиденные лексемы за директивой препроцессора, требуется newline
-C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(294,55): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
-C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(306,22): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
-  shader.cpp
-C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\shader.cpp(47,41): warning C4101: e: неиспользованная локальная переменная
+C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(307,55): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
+C:\Users\ohrim\Desktop\Proj\OpenGL_tesing\OpenGL_tesing\main.cpp(319,22): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
 LINK : warning LNK4098: библиотека по умолчанию "MSVCRTD" конфликтует с использованием других библиотек; используйте /NODEFAULTLIB:library
   Создание кода
-  29 of 798 functions ( 3.6%) were compiled, the rest were copied from previous compilation.
+  1 of 800 functions ( 0.1%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
     8 functions had inline decision re-evaluated but remain unchanged
   Создание кода завершено

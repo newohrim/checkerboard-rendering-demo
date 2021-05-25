@@ -38,7 +38,7 @@ private:
 	// Represent if current frame odd.
 	bool is_oddframe = false;
 	// Represent if checkerboard rendering is active.
-	const bool chb_active = true;
+	bool chb_active = true;
 	// Count of fragments which color values will be interpolated in resulted color.
 	const int interpolation_count = 0;
 	// Screen quad shader with no checkerboard R support.
@@ -92,6 +92,7 @@ public:
 	// Restores checkerboard pattern in stencil buffer to canonical value. 
 	// Use only if you changed values in Stencil buffer in first pass after prerencer_call.
 	void restore_checkerboard();
+	void toggle_checkerboard();
 	chb_fbo(const int width, const int height, bool checkerboard_mode = true, int interpolation = 0, int quad_VAO = -1, bool filtermode_linear = true);
 	~chb_fbo();
 };

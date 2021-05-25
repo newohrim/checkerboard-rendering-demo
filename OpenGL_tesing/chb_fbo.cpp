@@ -150,6 +150,10 @@ void chb_fbo::prerender_call()
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screen_texodd, 0);
 		}
 	}
+	else 
+	{
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screen_texeven, 0);
+	}
 }
 
 void chb_fbo::postrender_call()
@@ -241,6 +245,19 @@ void chb_fbo::restore_checkerboard()
 	set_attachments();
 	// Resetting is_odd flag??? why?
 	//is_oddframe = false;
+}
+
+void chb_fbo::toggle_checkerboard()
+{
+	if (chb_active) 
+	{
+		chb_active = false;
+	}
+	else 
+	{
+		chb_active = true;
+		is_oddframe = true;
+	}
 }
 
 chb_fbo::chb_fbo(const int width, const int height, bool checkerboard_mode, int interpolation, int quad_VAO, bool filtermode_linear) :
